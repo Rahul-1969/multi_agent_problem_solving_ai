@@ -1,0 +1,8 @@
+{
+  "admin": {
+    "email": "admin@example.com",
+    "hashed_password": "$2b$12$KbQi8/vBE7lMZ3X3P2s6YexqQvEwz2LfBipCv0FR7gVSFj6dSUdk5W",
+    "name": "Admin User",
+    "username": "admin"
+  }
+}
