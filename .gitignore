@@ -33,3 +33,29 @@ tmp_*.py
 # OS files
 Thumbs.db
 .DS_Store
+
+# WSL Python environment
+.venv-linux/
+
+# Kimchi
+.kimchi/
+
+# Temporary diff files
+*_diff.txt
+
+# Patch backups
+kimchi_patches/
+
+echo '
+# WSL Python environment
+.venv-linux/
+
+# Kimchi
+.kimchi/
+
+# Temporary diff files
+*_diff.txt
+
+# Patch backups
+kimchi_patches/
+' >> .gitignore
