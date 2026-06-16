@@ -18,7 +18,9 @@ logger = get_logger(__name__)
 
 
 def _format_chat_detail(chat: dict) -> dict:
-    return {**chat, "chat_id": chat["id"]}
+    detail = {k: v for k, v in chat.items() if k != "id"}
+    detail["chat_id"] = chat["id"]
+    return detail
 
 
 @router.get("/chats", response_model=ChatListResponse, summary="List chats")

@@ -47,36 +47,44 @@ def process_query(message: str) -> ChatResponse:
     Returns:
       ChatResponse with domain, response, data, and optional error.
 
-    Never raises — all exceptions are caught and returned as error responses.
+    Unexpected exceptions are logged with full traceback and re-raised
+    so the backend terminal always shows the root cause.
     """
     domain = DEFAULT_DOMAIN
     query = message.strip()
 
-    domain = route_domain(query)
-    logger.info(
-        "Domain=%s | Query=%s",
-        domain,
-        query[:80],
-    )
-
-    result = dispatch_pipeline(domain, query)
-    response = result.response if hasattr(result, "response") else result
-    data = dispatch_formatter(domain, result, query)
-
-    # If the pipeline dispatcher returned an internal error message,
-    # preserve the failure signal for the API response.
-    if response == INTERNAL_ERROR_MESSAGE:
-        return ChatResponse(
-            success=False,
-            domain=domain,
-            response=response,
-            data=None,
-            error="Pipeline execution failed",
+    try:
+        domain = route_domain(query)
+        logger.info(
+            "Domain=%s | Query=%s",
+            domain,
+            query[:80],
         )
 
-    return ChatResponse(
-        success=True,
-        domain=domain,
-        response=response,
-        data=data,
-    )
+        result = dispatch_pipeline(domain, query)
+        response = result.response if hasattr(result, "response") else result
+        data = dispatch_formatter(domain, result, query)
+
+        # If the pipeline dispatcher returned an internal error message,
+        # preserve the failure signal for the API response.
+        if response == INTERNAL_ERROR_MESSAGE:
+            return ChatResponse(
+                success=False,
+                domain=domain,
+                response=response,
+                data=None,
+                error="Pipeline execution failed",
+            )
+
+        return ChatResponse(
+            success=True,
+            domain=domain,
+            response=response,
+            data=data,
+        )
+    except Exception:
+        logger.exception(
+            "Unhandled error in chatbot_service.process_query | domain=%s",
+            domain,
+        )
+        raise

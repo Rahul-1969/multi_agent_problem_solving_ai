@@ -31,6 +31,9 @@ from backend.models.response_models import CodingData
 logger = get_logger(__name__)
 _DIVIDER = "─" * 55
 
+# Missing pattern that caused runtime NameError (see audit P0-4)
+_CODE_PATTERN = re.compile(r'```(\w+)?\n(.*?)```', re.DOTALL)
+
 _SYSTEM = (
     "You are a senior software engineer.\n"
     "Always provide complete working code.\n"
