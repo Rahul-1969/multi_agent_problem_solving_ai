@@ -109,6 +109,7 @@ def _extract_college_list(
 # ──────────────────────────────────────────────────────────────────────────────
 
 _DIVIDER_PATTERN: Pattern = re.compile(r'─{10,}')
+_CODE_PATTERN: Pattern = re.compile(r'```(\w+)?\n(.*?)```', re.DOTALL)
 
 # Import canonical label maps from schema files
 # (Single source of truth — no local definitions)
@@ -121,6 +122,7 @@ _SAFE_PATTERN: Pattern = re.compile(r'🟢.*?SAFE.*?\n(.*?)(?=🟡|🔴|─{10}|
 _MODERATE_PATTERN: Pattern = re.compile(r'🟡.*?MODERATE.*?\n(.*?)(?=🔴|─{10}|\Z)', re.DOTALL)
 _DREAM_PATTERN: Pattern = re.compile(r'🔴.*?DREAM.*?\n(.*?)(?=─{10}|\Z)', re.DOTALL)
 _BULLET_PATTERN: Pattern = re.compile(r'•\s+(.+?)(?:\n|$)')
+_SUGGESTION_PATTERN: Pattern = _BULLET_PATTERN
 
 _COLLEGE_PATTERNS: Final[dict[str, Pattern]] = {
     "safe": _SAFE_PATTERN,
