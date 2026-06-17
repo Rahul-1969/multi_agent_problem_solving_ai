@@ -86,7 +86,7 @@ async def upload_pdf(
     Upload a PDF file directly. Saves to server and loads it.
     """
     session_id = _resolve_session_id(session_id, current_user)
-    if not file.filename.lower().endswith(".pdf"):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
         return PDFLoadResponse(
             success=False,
             session_id=session_id,
@@ -94,7 +94,15 @@ async def upload_pdf(
             error="Invalid file type",
         )
 
-    save_path = os.path.join(UPLOAD_DIR, file.filename)
+    safe_filename = os.path.basename(file.filename)
+    save_path = os.path.join(UPLOAD_DIR, safe_filename)
+    if not safe_filename or os.path.commonpath([os.path.abspath(UPLOAD_DIR), os.path.abspath(save_path)]) != os.path.abspath(UPLOAD_DIR):
+        return PDFLoadResponse(
+            success=False,
+            session_id=session_id,
+            message="Invalid filename",
+            error="Filename contains path traversal characters",
+        )
     try:
         with open(save_path, "wb") as file_obj:
             content = await file.read()
