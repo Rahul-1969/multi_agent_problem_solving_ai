@@ -87,4 +87,9 @@ def process_query(message: str) -> ChatResponse:
             "Unhandled error in chatbot_service.process_query | domain=%s",
             domain,
         )
-        raise
+        return ChatResponse(
+            success=False,
+            domain=domain,
+            response=INTERNAL_ERROR_MESSAGE,
+            error="Internal processing error",
+        )

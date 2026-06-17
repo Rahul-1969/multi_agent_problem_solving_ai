@@ -3,8 +3,8 @@ import pytest
 from backend.services.chatbot_service import process_query
 
 
-def test_process_query_propagates_exception_with_full_traceback(caplog, monkeypatch):
-    """Unexpected exceptions must be logged with full traceback and re-raised."""
+def test_process_query_returns_error_response_on_exception(caplog, monkeypatch):
+    """Unexpected exceptions must be caught, logged with full traceback, and returned as a safe error response."""
     monkeypatch.setattr(
         'backend.services.chatbot_service.route_domain',
         lambda query: 'general'
@@ -15,8 +15,13 @@ def test_process_query_propagates_exception_with_full_traceback(caplog, monkeypa
     )
 
     with caplog.at_level(logging.ERROR, logger='backend.services.chatbot_service'):
-        with pytest.raises(RuntimeError, match='pipeline boom'):
-            process_query('Hello world')
+        result = process_query('Hello world')
+
+    # Verify error response is returned instead of propagating the exception
+    assert result.success is False
+    assert result.domain == 'general'
+    assert result.error == "Internal processing error"
+    assert "An internal error occurred" in result.response
 
     # Verify logger.exception was called (full traceback in logs)
     assert any(
