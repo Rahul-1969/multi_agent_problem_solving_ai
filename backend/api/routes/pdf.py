@@ -55,6 +55,18 @@ def load_pdf_by_path(
             message="Missing 'path' field",
             error="No path provided",
         )
+
+    # Prevent path traversal: resolve the requested path and ensure it stays
+    # within the allowed UPLOAD_DIR.
+    resolved_path = os.path.abspath(os.path.join(UPLOAD_DIR, path))
+    if os.path.commonpath([os.path.abspath(UPLOAD_DIR), resolved_path]) != os.path.abspath(UPLOAD_DIR):
+        return PDFLoadResponse(
+            success=False,
+            session_id=session_id,
+            message="Invalid path",
+            error="Path traversal is not allowed",
+        )
+
     try:
         if background_tasks is not None:
             background_tasks.add_task(_postprocess_pdf_task, session_id, path)
