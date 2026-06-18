@@ -76,7 +76,7 @@ def register(request: RegisterRequest):
 @router.post("/refresh", response_model=TokenResponse, summary="Refresh an access token")
 def refresh(request: RefreshRequest):
     try:
-        payload = decode_token(request.refresh_token)
+        payload = decode_token(request.refresh_token, expected_type="refresh")
     except Exception as exc:
         logger.warning("Invalid refresh attempt: %s", exc)
         raise HTTPException(

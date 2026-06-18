@@ -21,10 +21,8 @@ class TestSecretKeyConfiguration:
 
     def test_runtime_error_when_jwt_secret_key_missing(self, monkeypatch):
         """Importing jwt_service without JWT_SECRET_KEY must raise RuntimeError."""
-        # Temporarily clear the environment variable
         monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
 
-        # Remove jwt_service from sys.modules so re-import is forced
         import sys
         monkeypatch.delitem(sys.modules, "backend.auth.jwt_service", raising=False)
         monkeypatch.delitem(sys.modules, "backend.auth", raising=False)
@@ -46,20 +44,21 @@ class TestSecretKeyConfiguration:
 class TestTokenCreation:
     """Tests for token creation functions."""
 
-    def test_create_access_token_returns_valid_jwt(self):
+    def test_create_access_token_includes_type_claim(self):
         token = create_access_token("alice")
         assert isinstance(token, str)
-        # Verify it decodes without error
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         assert payload["sub"] == "alice"
+        assert payload["type"] == "access"
         assert "exp" in payload
         assert "iat" in payload
 
-    def test_create_refresh_token_returns_valid_jwt(self):
+    def test_create_refresh_token_includes_type_claim(self):
         token = create_refresh_token("bob")
         assert isinstance(token, str)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         assert payload["sub"] == "bob"
+        assert payload["type"] == "refresh"
 
     def test_access_token_expiration(self):
         token = create_access_token("alice")
@@ -74,15 +73,46 @@ class TestTokenCreation:
 class TestDecodeToken:
     """Tests for decode_token function."""
 
-    def test_decode_valid_token_returns_token_payload(self):
+    def test_decode_valid_access_token_returns_token_payload(self):
         token = create_access_token("alice")
         result = decode_token(token)
         assert result.username == "alice"
 
-    def test_decode_expired_token_raises(self, monkeypatch):
-        # Create a token that is already expired
-        expired_token = _create_token(
+    def test_decode_valid_refresh_token_returns_token_payload(self):
+        token = create_refresh_token("bob")
+        result = decode_token(token)
+        assert result.username == "bob"
+
+    def test_decode_with_matching_expected_type_succeeds(self):
+        access_token = create_access_token("alice")
+        result = decode_token(access_token, expected_type="access")
+        assert result.username == "alice"
+
+        refresh_token = create_refresh_token("bob")
+        result = decode_token(refresh_token, expected_type="refresh")
+        assert result.username == "bob"
+
+    def test_decode_access_token_with_refresh_expected_type_raises(self):
+        access_token = create_access_token("alice")
+        with pytest.raises(ValueError, match="Expected refresh token, got access"):
+            decode_token(access_token, expected_type="refresh")
+
+    def test_decode_refresh_token_with_access_expected_type_raises(self):
+        refresh_token = create_refresh_token("bob")
+        with pytest.raises(ValueError, match="Expected access token, got refresh"):
+            decode_token(refresh_token, expected_type="access")
+
+    def test_decode_token_without_type_claim_and_expected_type_raises(self):
+        token = _create_token(
             {"sub": "alice"},
+            timedelta(minutes=10),
+        )
+        with pytest.raises(ValueError, match="Expected access token, got None"):
+            decode_token(token, expected_type="access")
+
+    def test_decode_expired_token_raises(self, monkeypatch):
+        expired_token = _create_token(
+            {"sub": "alice", "type": "access"},
             timedelta(seconds=-1),
         )
         with pytest.raises(jwt.ExpiredSignatureError):
@@ -94,7 +124,7 @@ class TestDecodeToken:
 
     def test_decode_token_missing_sub_raises_value_error(self):
         token = _create_token(
-            {},  # no 'sub' claim
+            {"type": "access"},
             timedelta(minutes=10),
         )
         with pytest.raises(ValueError, match="Token missing subject"):

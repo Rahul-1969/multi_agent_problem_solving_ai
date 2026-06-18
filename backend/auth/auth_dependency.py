@@ -8,13 +8,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenPayload:
-    """Verify the provided JWT and return the token payload.
-    
+    """Verify the provided JWT access token and return the token payload.
+
+    Rejects refresh tokens to prevent token-type confusion attacks.
+
     Raises:
-        HTTPException: If token is invalid, expired, or missing
+        HTTPException: If token is invalid, expired, missing, or wrong type
     """
     try:
-        payload = decode_token(token)
+        payload = decode_token(token, expected_type="access")
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(
