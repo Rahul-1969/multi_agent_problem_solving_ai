@@ -16,7 +16,7 @@ from constants.domains import (
     EDUCATION_DOMAIN,
     GENERAL_DOMAIN,
 )
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # Module constants and type aliases
@@ -115,11 +115,11 @@ class ChatMessage(BaseModel):
     data: dict[str, Any] | None = None
     created_at: str | None = None
 
-    @field_validator("text", mode="before")
-    def _fill_text(cls, value, info):
-        if value is not None:
-            return value
-        return info.data.get("content")
+    @model_validator(mode="before")
+    def _fill_text(cls, data):
+        if isinstance(data, dict) and data.get("text") is None:
+            data["text"] = data.get("content")
+        return data
 
 
 class ChatSummary(BaseModel):
