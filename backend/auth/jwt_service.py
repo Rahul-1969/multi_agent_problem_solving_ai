@@ -5,7 +5,7 @@ except ImportError as exc:
         "Missing required package 'PyJWT'. Install dependencies with: `python -m pip install -r requirements.txt`"
     ) from exc
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Final
 from backend.auth.token_models import TokenPayload
 
@@ -21,8 +21,8 @@ REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 7
 
 def _create_token(data: dict, expires_delta: timedelta) -> str:
     payload = data.copy()
-    payload["exp"] = datetime.utcnow() + expires_delta
-    payload["iat"] = datetime.utcnow()
+    payload["exp"] = datetime.now(timezone.utc) + expires_delta
+    payload["iat"] = datetime.now(timezone.utc)
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return token if isinstance(token, str) else token.decode("utf-8")
 
