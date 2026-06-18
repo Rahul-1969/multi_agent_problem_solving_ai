@@ -4,7 +4,7 @@ PDF management and Q&A endpoints.
 """
 
 import os
-from fastapi import APIRouter, Depends, UploadFile, File, BackgroundTasks, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
 from backend.models.pdf_models import (
@@ -28,9 +28,6 @@ router = APIRouter()
 
 logger = get_logger(__name__)
 
-def _postprocess_pdf_task(session_id: str, file_path: str) -> None:
-    logger.info("Background PDF task placeholder | session=%s file=%s", session_id, file_path)
-
 
 def _resolve_session_id(session_id: str | None, current_user: TokenPayload) -> str:
     return session_id.strip() if session_id and session_id.strip() else current_user.username
@@ -39,7 +36,6 @@ def _resolve_session_id(session_id: str | None, current_user: TokenPayload) -> s
 @router.post("/pdf/load", response_model=PDFLoadResponse, summary="Load a PDF by path")
 def load_pdf_by_path(
     request: PDFLoadRequest,
-    background_tasks: BackgroundTasks,
     current_user: TokenPayload = Depends(get_current_user),
 ) -> PDFLoadResponse:
     """
@@ -68,9 +64,6 @@ def load_pdf_by_path(
         )
 
     try:
-        if background_tasks is not None:
-            background_tasks.add_task(_postprocess_pdf_task, session_id, path)
-
         result = load_pdf(path, session_id)
     except Exception:
         logger.exception("Failed to load PDF from path: %s", path)
@@ -89,7 +82,6 @@ def load_pdf_by_path(
 
 @router.post("/pdf/upload", response_model=PDFLoadResponse, summary="Upload a PDF file")
 async def upload_pdf(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     session_id: str | None = Form(default=None),
     current_user: TokenPayload = Depends(get_current_user),
@@ -119,9 +111,6 @@ async def upload_pdf(
         with open(save_path, "wb") as file_obj:
             content = await file.read()
             file_obj.write(content)
-
-        if background_tasks is not None:
-            background_tasks.add_task(_postprocess_pdf_task, session_id, save_path)
 
         result = load_pdf(save_path, session_id)
         return PDFLoadResponse(

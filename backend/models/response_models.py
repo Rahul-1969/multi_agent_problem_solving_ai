@@ -182,28 +182,3 @@ class RegisterResponse(BaseModel):
     username: str
     name: str | None = None
     email: str | None = None
-
-
-# PDF response models
-class PDFMetadata(BaseModel):
-    model_config = MODEL_CONFIG
-
-    filename: str | None = None
-    pages: int | None = None
-    chunks: int | None = None
-
-class PDFLoadResponse(BaseResponse, PDFMetadata):
-    model_config = MODEL_CONFIG
-
-    message: str
-
-
-class PDFStatusResponse(PDFMetadata):
-    model_config = MODEL_CONFIG
-    loaded: bool
-
-
-class PDFAnswerResponse(BaseResponse):
-    model_config = MODEL_CONFIG
-
-    response: str

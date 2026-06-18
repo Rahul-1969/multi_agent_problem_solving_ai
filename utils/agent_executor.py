@@ -32,10 +32,12 @@ Execution patterns:
 import time
 from typing import Final, Literal
 
-from agents.base_agent import base_agent
-from agents.expert_agent import expert_enhance
+from agents.llm_agents import (
+    run_base_agent,
+    run_expert_agent,
+    run_refiner_agent,
+)
 from agents.models import AgentResult
-from agents.refiner_agent import refine_answer
 from agents.agent_policy import should_run_refiner, should_run_expert
 from utils.cache import cached_response
 from utils.complexity import detect_complexity
@@ -61,25 +63,25 @@ _VALID_LEVELS: Final[frozenset[ComplexityLevel]] = frozenset({"low", "medium", "
 def _cached_base_result(query: str) -> AgentResult:
     """Cache base agent results for repeated queries."""
     logger.info("Running base agent (cached)")
-    return base_agent(query)
+    return run_base_agent(query)
 
 
 def _run_base(query: str) -> AgentResult:
     """Run base agent."""
     logger.info("Running base agent")
-    return base_agent(query)
+    return run_base_agent(query)
 
 
 def _run_refiner(result: AgentResult) -> AgentResult:
     """Run refiner agent, with graceful fallback."""
     logger.info("Running refiner agent")
-    return refine_answer(result)
+    return run_refiner_agent(result)
 
 
 def _run_expert(result: AgentResult, query: str) -> AgentResult:
     """Run expert agent, with graceful fallback."""
     logger.info("Running expert agent")
-    return expert_enhance(result, query)
+    return run_expert_agent(result, query)
 
 
 def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -> str:
