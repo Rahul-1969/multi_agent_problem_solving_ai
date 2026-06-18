@@ -152,29 +152,31 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
             )
 
         # 3. Decide: run refiner?
+        refiner_error = False
         if should_run_refiner(base_result, level):
             try:
                 base_result = _run_refiner(base_result)
                 refiner_used = True
             except Exception:
-                logger.exception(
-                    "Refiner failed, continuing with base result"
-                )
-                # Fallback: use base_result as-is
+                logger.exception("Refiner failed")
+                refiner_error = True
 
         # 4. Decide: run expert?
+        expert_error = False
         if should_run_expert(base_result, level):
             try:
                 base_result = _run_expert(base_result, query)
                 expert_used = True
             except Exception:
-                logger.exception(
-                    "Expert failed, continuing with current result"
-                )
-                # Fallback: use base_result as-is
+                logger.exception("Expert failed")
+                expert_error = True
 
         # 5. Extract final answer
         final_answer = base_result.answer
+        if refiner_error:
+            final_answer += "\n\n[Refiner step failed: the answer above may not be fully polished.]"
+        if expert_error:
+            final_answer += "\n\n[Expert step failed: the answer above may not include deep insights.]"
 
         # 6. Log execution statistics
         elapsed = time.time() - start_time
