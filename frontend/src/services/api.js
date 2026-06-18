@@ -11,9 +11,9 @@ API.interceptors.request.use((config) => {
     const stored = localStorage.getItem('neuralchat_user')
     if (stored) {
       const user = JSON.parse(stored)
-      if (user?.token) {
+      if (user?.access_token) {
         config.headers = config.headers || {}
-        config.headers.Authorization = `Bearer ${user.token}`
+        config.headers.Authorization = `Bearer ${user.access_token}`
       }
     }
   } catch {
