@@ -9,8 +9,11 @@ from datetime import datetime, timedelta
 from typing import Final
 from backend.auth.token_models import TokenPayload
 
-# Use environment variable for SECRET_KEY in production
-SECRET_KEY: Final[str] = os.getenv("JWT_SECRET_KEY", "supersecretkey-dev-only")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET_KEY environment variable must be configured."
+    )
 ALGORITHM: Final[str] = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = 30
 REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 7
