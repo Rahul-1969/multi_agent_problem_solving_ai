@@ -8,6 +8,7 @@ from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
 from backend.models.request_models import ChatRequest, ChatCreateRequest, ChatMessageRequest
 from backend.models.response_models import ChatResponse, ChatDetailResponse, ChatListResponse
+from constants.domains import GENERAL_DOMAIN
 from backend.services.chatbot_service import process_query
 from backend.services.chat_history import chat_history_manager
 from backend.services.streaming_service import create_text_streaming_response
@@ -83,7 +84,7 @@ def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_current_
         if chat is None:
             return ChatResponse(
                 success=False,
-                domain="unknown",
+                domain=GENERAL_DOMAIN,
                 response="",
                 error="Chat not found",
                 chat_id=request.chat_id,
