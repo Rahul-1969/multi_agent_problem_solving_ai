@@ -14,6 +14,7 @@ import json
 import logging
 import time
 import requests
+import asyncio
 from typing import Final
 
 from config import OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_URL
@@ -119,6 +120,23 @@ def call_llm(
     prompt = prompt.strip()
     system = system.strip()
     return _cached_call(prompt, system, num_predict, temperature)
+
+
+async def async_call_llm(
+    prompt: str,
+    system: str = "",
+    num_predict: int = 512,
+    temperature: float = 0.3,
+) -> str:
+    """
+    Async wrapper that delegates to the sync ``call_llm`` via
+    ``asyncio.to_thread`` so async callers do not block the event loop.
+    """
+    prompt = prompt.strip()
+    system = system.strip()
+    return await asyncio.to_thread(
+        _cached_call, prompt, system, num_predict, temperature
+    )
 
 
 def _parse_ollama_response(raw: str) -> str:

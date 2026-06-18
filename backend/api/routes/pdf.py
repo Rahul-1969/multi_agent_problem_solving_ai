@@ -148,11 +148,11 @@ def clear(
 
 
 @router.post("/pdf/ask", response_model=PDFAnswerResponse, summary="Ask a question from the PDF")
-def ask_pdf(request: PDFQuestionRequest, current_user: TokenPayload = Depends(get_current_user)) -> PDFAnswerResponse:
+async def ask_pdf(request: PDFQuestionRequest, current_user: TokenPayload = Depends(get_current_user)) -> PDFAnswerResponse:
     """
     Answer a question based on the currently loaded PDF.
     Must call /pdf/load or /pdf/upload first.
     """
     session_id = _resolve_session_id(request.session_id, current_user)
-    result = answer_from_pdf(request.message, session_id)
+    result = await async_answer_from_pdf(request.message, session_id)
     return PDFAnswerResponse(**result)

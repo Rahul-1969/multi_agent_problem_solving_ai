@@ -6,7 +6,7 @@ Service layer for PDF load/query/status operations.
 from utils.logger import get_logger
 import os
 from tools.pdf_session_manager import DEFAULT_SESSION_ID, pdf_session_manager
-from pipelines.pdf_pipeline import pdf_pipeline
+from pipelines.pdf_pipeline import pdf_pipeline, async_pdf_pipeline
 
 logger = get_logger(__name__)
 
@@ -46,6 +46,16 @@ def clear_pdf(session_id: str | None = None) -> dict:
         pdf_session_manager.clear(session_id)
         return {"success": True, "session_id": session_id, "message": f"PDF '{name}' unloaded"}
     return {"success": False, "session_id": session_id, "message": "No PDF is currently loaded"}
+
+
+async def async_answer_from_pdf(question: str, session_id: str | None = None) -> dict:
+    """Async version of answer_from_pdf for use in async route handlers."""
+    session_id = session_id or DEFAULT_SESSION_ID
+    if not pdf_session_manager.is_loaded(session_id):
+        return {"success": False, "response": "No PDF loaded. Use /pdf/load first.", "session_id": session_id}
+    store = pdf_session_manager.get_store(session_id)
+    response = await async_pdf_pipeline(question, store.chunks, store.filename)
+    return {"success": True, "session_id": session_id, "response": response}
 
 
 def answer_from_pdf(question: str, session_id: str | None = None) -> dict:

@@ -15,7 +15,7 @@ the LLM is instructed to say so rather than hallucinate.
 
 from utils.logger import get_logger
 import re
-from llm.ollama_client import call_llm
+from llm.ollama_client import call_llm, async_call_llm
 from tools.pdf_retriever import retrieve_chunks
 
 logger = get_logger(__name__)
@@ -44,34 +44,10 @@ def _extract_tag(text: str, tag: str) -> str:
     return m.group(1).strip() if m else ""
 
 
-def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
-    """
-    Answer a question from the loaded PDF with page references.
-    """
-    if not chunks:
-        return (
-            "📄  No PDF is currently loaded.\n\n"
-            "To load a PDF, type:\n"
-            "    load pdf <path>\n\n"
-            "Example:\n"
-            "    load pdf C:\\Users\\HP\\Documents\\notes.pdf"
-        )
-
-    # ── Step 1: Retrieve relevant chunks ─────────────────────────────────────
-    chunks = retrieve_chunks(query, chunks, top_n=4)
-
-    if not chunks:
-        return (
-            f"🔍  No relevant content found in '{filename}' "
-            f"for your query.\n\n"
-            "Try rephrasing with keywords that appear in the document."
-        )
-
+def _build_pdf_prompt(query: str, chunks: list[dict], filename: str) -> str:
+    """Build the grounded prompt for PDF Q&A."""
     context = _format_context(chunks)
-    ref_pages = sorted(set(c["page_num"] for c in chunks))
-
-    # ── Step 2: Build grounded prompt ────────────────────────────────────────
-    prompt = (
+    return (
         f"Document: {filename}\n\n"
         f"Context passages from the document:\n\n"
         f"{context}\n\n"
@@ -86,25 +62,16 @@ def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
         "</references>"
     )
 
-    # ── Step 3: LLM call ──────────────────────────────────────────────────────
-    try:
-        logger.info("PDF pipeline: querying '%s' | query: %s",
-                    filename, query[:60])
-        raw = call_llm(prompt=prompt, system=_SYSTEM)
-    except RuntimeError as exc:
-        logger.error("PDF pipeline LLM error: %s", exc)
-        return f"⚠️  LLM unavailable.\nError: {exc}"
 
-    # ── Step 4: Parse and format output ──────────────────────────────────────
-    answer     = _extract_tag(raw, "answer")
+def _format_pdf_response(raw: str, ref_pages: list[int], filename: str) -> str:
+    """Format the LLM raw output into the final response string."""
+    answer = _extract_tag(raw, "answer")
     references = _extract_tag(raw, "references")
 
-    # Fallback if model skipped tags
     if not answer:
         logger.warning("PDF pipeline: LLM skipped tags — showing raw output")
         answer = raw.strip()
 
-    # Build page reference line from retrieved chunks (always accurate)
     pages_line = ", ".join(f"Page {p}" for p in ref_pages)
 
     lines = [
@@ -121,3 +88,64 @@ def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
         lines += ["", "📝  Cited passages:", references]
 
     return "\n".join(lines)
+
+
+def _prepare_pdf_pipeline(query: str, chunks: list[dict], filename: str):
+    """Shared preparation for PDF Q&A. Returns (prompt, ref_pages, early_result)."""
+    if not chunks:
+        early = (
+            "📄  No PDF is currently loaded.\n\n"
+            "To load a PDF, type:\n"
+            "    load pdf <path>\n\n"
+            "Example:\n"
+            "    load pdf C:\\Users\\HP\\Documents\\notes.pdf"
+        )
+        return None, None, early
+
+    chunks = retrieve_chunks(query, chunks, top_n=4)
+
+    if not chunks:
+        early = (
+            f"🔍  No relevant content found in '{filename}' "
+            f"for your query.\n\n"
+            "Try rephrasing with keywords that appear in the document."
+        )
+        return None, None, early
+
+    prompt = _build_pdf_prompt(query, chunks, filename)
+    ref_pages = sorted(set(c["page_num"] for c in chunks))
+    return prompt, ref_pages, None
+
+
+def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
+    """Answer a question from the loaded PDF with page references (sync)."""
+    prompt, ref_pages, early = _prepare_pdf_pipeline(query, chunks, filename)
+    if early:
+        return early
+
+    try:
+        logger.info("PDF pipeline: querying '%s' | query: %s",
+                    filename, query[:60])
+        raw = call_llm(prompt=prompt, system=_SYSTEM)
+    except RuntimeError as exc:
+        logger.error("PDF pipeline LLM error: %s", exc)
+        return f"⚠️  LLM unavailable.\nError: {exc}"
+
+    return _format_pdf_response(raw, ref_pages, filename)
+
+
+async def async_pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
+    """Answer a question from the loaded PDF with page references (async)."""
+    prompt, ref_pages, early = _prepare_pdf_pipeline(query, chunks, filename)
+    if early:
+        return early
+
+    try:
+        logger.info("Async PDF pipeline: querying '%s' | query: %s",
+                    filename, query[:60])
+        raw = await async_call_llm(prompt=prompt, system=_SYSTEM)
+    except RuntimeError as exc:
+        logger.error("Async PDF pipeline LLM error: %s", exc)
+        return f"⚠️  LLM unavailable.\nError: {exc}"
+
+    return _format_pdf_response(raw, ref_pages, filename)
