@@ -25,6 +25,7 @@ from constants.domains import (
     EDUCATION_DOMAIN,
     GENERAL_DOMAIN,
     MEDICAL_DOMAIN,
+    PDF_DOMAIN,
 )
 from utils.logger import get_logger
 
@@ -55,6 +56,25 @@ def _score(query: str, domain: str) -> int:
 
     return total
 
+
+# ── PDF ───────────────────────────────────────────────────────────────────────
+_PDF_KW: dict[str, int] = {
+    "pdf": _H,
+    "uploaded": _H,
+    "document": _M,
+    "this document": _H,
+    "my document": _H,
+    "the document": _M,
+    "file": _L,
+    "this file": _H,
+    "my file": _H,
+    "page": _L,
+    "pages": _L,
+    "extract": _M,
+    "summarize": _M,
+    "from the pdf": _H,
+    "in the pdf": _H,
+}
 
 # ── Coding ────────────────────────────────────────────────────────────────────
 _CODING_KW: dict[str, int] = {
@@ -220,6 +240,7 @@ _EDUCATION_KW.update({
 })
 # Domain priority for tie-breaking
 _DOMAIN_PRIORITY: Final[tuple[str, ...]] = (
+    PDF_DOMAIN,
     CODING_DOMAIN,
     MEDICAL_DOMAIN,
     COLLEGE_DOMAIN,
@@ -247,6 +268,7 @@ _EDU_INTENTS: Final[frozenset[str]] = frozenset((
 
 # Domain -> keywords map for easier iteration
 _DOMAIN_KEYWORDS: dict[str, dict[str, int]] = {
+    PDF_DOMAIN: _PDF_KW,
     CODING_DOMAIN: _CODING_KW,
     MEDICAL_DOMAIN: _MEDICAL_KW,
     COLLEGE_DOMAIN: _COLLEGE_KW,
@@ -278,7 +300,7 @@ _PHRASE_KEYWORDS: dict[str, dict[str, int]] = {
 def route_domain(query: str) -> str:
     """
     Score all domains simultaneously and return the highest-scoring one.
-    Returns: 'coding' | 'medical' | 'college' | 'education' | GENERAL_DOMAIN
+    Returns: 'pdf' | 'coding' | 'medical' | 'college' | 'education' | 'general'
     """
     q = query.strip().lower()
 
