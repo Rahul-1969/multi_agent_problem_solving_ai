@@ -45,7 +45,7 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
             {domain}
           </span>
         )}
-        <MarkdownRenderer content={text} />
+        <MarkdownRenderer content={displayText} />
       </div>
     );
   };

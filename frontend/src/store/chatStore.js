@@ -160,7 +160,7 @@ const useChatStore = create((set, get) => ({
           ...state.activeChat,
           messages: [
             ...(state.activeChat?.messages || []),
-            { sender: 'bot', text: 'Something went wrong. Please try again.', domain: 'general' },
+            { sender: 'bot', text: 'Something went wrong. Please try again.', content: 'Something went wrong. Please try again.', domain: 'general' },
           ],
         },
       }))
