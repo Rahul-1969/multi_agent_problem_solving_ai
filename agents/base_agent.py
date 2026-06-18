@@ -1,4 +1,4 @@
-﻿"""
+"""
 agents/base_agent.py
 Thin wrapper that delegates base agent execution to the centralized
 LLM implementation.

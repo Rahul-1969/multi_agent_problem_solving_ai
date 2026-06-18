@@ -1,4 +1,4 @@
-﻿"""
+"""
 agents/expert_agent.py
 Thin wrapper that delegates expert execution to the centralized
 LLM implementation.

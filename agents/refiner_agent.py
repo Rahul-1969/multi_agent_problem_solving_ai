@@ -1,4 +1,4 @@
-﻿"""
+"""
 agents/refiner_agent.py
 Thin wrapper that delegates refiner execution to the centralized
 LLM implementation.
