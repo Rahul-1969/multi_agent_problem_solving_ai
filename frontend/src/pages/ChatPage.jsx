@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+
 import useAuthStore from '../store/authStore'
 import Sidebar from '../components/Sidebar'
 import ChatWindow from '../components/ChatWindow'
@@ -10,7 +10,6 @@ import usePdfStore from '../store/pdfStore'
 
 export default function ChatPage() {
   const user = useAuthStore((state) => state.user)
-  const navigate = useNavigate()
 
   const {
     activeChatId,
@@ -30,14 +29,9 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true })
-      return
-    }
-
     void loadChats()
     void fetchPdfStatus()
-  }, [user, navigate, loadChats, fetchPdfStatus])
+  }, [user, loadChats, fetchPdfStatus])
 
   const filtered = chats.filter((chat) => {
     const query = searchQuery.trim().toLowerCase()

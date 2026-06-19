@@ -24,6 +24,7 @@ from utils.logger import get_logger
 import re
 from typing import Final
 
+from constants import DIVIDER
 from llm.ollama_client  import call_llm
 from utils.section_parser import parse_sections
 from utils.text_cleaner import clean_text
@@ -32,7 +33,6 @@ from schemas.medical_schema import MEDICAL_LABELS
 from backend.models.response_models import MedicalData
 
 logger = get_logger(__name__)
-_DIVIDER = "─" * 55
 
 _DISCLAIMER = (
     "\n⚠️  IMPORTANT DISCLAIMER\n"
@@ -146,7 +146,7 @@ def medical_pipeline(query: str) -> PipelineResult:
     # Emergency bypass — immediate warning without LLM
     if _is_emergency(query):
         emergency_response = (
-            f"🚨  MEDICAL EMERGENCY WARNING\n{_DIVIDER}\n\n"
+            f"🚨  MEDICAL EMERGENCY WARNING\n{DIVIDER}\n\n"
             "Your symptoms may indicate a serious medical emergency.\n\n"
             "Call emergency services or go to the nearest emergency room immediately.\n\n"
             "Do NOT rely on this AI for emergency medical guidance."
@@ -198,22 +198,22 @@ def medical_pipeline(query: str) -> PipelineResult:
 
     if not any((conditions, treatments, lifestyle)):
         logger.warning("Medical: labels skipped — raw output")
-        fallback_response = f"🩺  MEDICAL INFORMATION\n{_DIVIDER}\n\n{raw.strip()}{_DISCLAIMER}"
+        fallback_response = f"🩺  MEDICAL INFORMATION\n{DIVIDER}\n\n{raw.strip()}{_DISCLAIMER}"
         return PipelineResult(
             response=fallback_response,
             data=MedicalData()
         )
 
     lines = [
-        f"🩺  MEDICAL INFORMATION\n{_DIVIDER}\n",
+        f"🩺  MEDICAL INFORMATION\n{DIVIDER}\n",
         f"📋  Possible Conditions (most common first)\n{_sec(conditions)}\n",
-        f"{_DIVIDER}\n",
+        f"{DIVIDER}\n",
         f"💊  Safe Treatments\n{_sec(treatments)}\n",
-        f"{_DIVIDER}\n",
+        f"{DIVIDER}\n",
         f"🥗  Lifestyle & Precautions\n{_sec(lifestyle)}\n",
     ]
     if emergency:
-        lines += [f"{_DIVIDER}\n", f"🚨  Seek Immediate Medical Attention If\n{emergency}\n"]
+        lines += [f"{DIVIDER}\n", f"🚨  Seek Immediate Medical Attention If\n{emergency}\n"]
 
     lines.append(_DISCLAIMER)
     formatted_response = "\n".join(lines)

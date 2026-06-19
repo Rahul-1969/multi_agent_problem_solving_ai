@@ -19,6 +19,7 @@ import re
 from difflib import get_close_matches
 from typing import Final
 
+from constants import DIVIDER
 from llm.ollama_client       import call_llm
 from utils.complexity        import detect_complexity
 from utils.known_algorithms  import KNOWN_ALGORITHMS
@@ -29,7 +30,6 @@ from schemas.coding_schema import CODING_LABELS
 from backend.models.response_models import CodingData
 
 logger = get_logger(__name__)
-_DIVIDER = "─" * 55
 
 # Missing pattern that caused runtime NameError (see audit P0-4)
 _CODE_PATTERN = re.compile(r'```(\w+)?\n(.*?)```', re.DOTALL)
@@ -245,7 +245,7 @@ def coding_pipeline(query: str) -> PipelineResult:
     # Validation check (only for DSA/algorithm queries)
     validation_msg = validate_coding_query(query)
     if validation_msg:
-        validation_response = f"💻  CODING ASSISTANT\n{_DIVIDER}\n\n{validation_msg}\n\n{_DIVIDER}"
+        validation_response = f"💻  CODING ASSISTANT\n{DIVIDER}\n\n{validation_msg}\n\n{DIVIDER}"
         return PipelineResult(
             response=validation_response,
             data=CodingData(
@@ -267,7 +267,7 @@ def coding_pipeline(query: str) -> PipelineResult:
         )
 
     cleaned = _clean_code_output(raw, lang)
-    formatted_response = f"💻  CODING ASSISTANT\n{_DIVIDER}\n\n{cleaned}\n\n{_DIVIDER}"
+    formatted_response = f"💻  CODING ASSISTANT\n{DIVIDER}\n\n{cleaned}\n\n{DIVIDER}"
 
     # Parse formatted response into CodingData model
     # Extract code block from the cleaned output

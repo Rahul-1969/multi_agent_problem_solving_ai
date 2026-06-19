@@ -17,6 +17,7 @@ numbered sections. "DEFINITION:" on its own line is harder to skip than
 Also: fallback parser now captures unlabeled leading text as definition.
 """
 
+from constants import DIVIDER
 from utils.logger import get_logger
 import re
 
@@ -30,8 +31,6 @@ from schemas.education_schema import EDUCATION_LABELS
 from backend.models.response_models import EducationData
 
 logger = get_logger(__name__)
-
-_DIVIDER = "─" * 55
 _TOKEN_CAP :final = {"low": 250, "medium": 350, "high": 500}
 
 _SYSTEM = (
@@ -69,7 +68,7 @@ _SECTION_LABELS :final = {
 
 _BULLET_PATTERN = re.compile(r"^[\-\*\u2022].+", re.MULTILINE)
 
-_HEADER = f"{_DIVIDER}\n📚  EDUCATION ASSISTANT\n{_DIVIDER}\n\n"
+_HEADER = f"{DIVIDER}\n📚  EDUCATION ASSISTANT\n{DIVIDER}\n\n"
 
 
 def _build_prompt(query: str, level: str) -> str:
@@ -146,23 +145,23 @@ def education_pipeline(query: str) -> PipelineResult:
         out += ["", "📖  Definition", secs["definition"]]
 
     if secs["keypoints"]:
-        out += ["", f"{_DIVIDER}", "🔑  Key Points", secs["keypoints"]]
+        out += ["", f"{DIVIDER}", "🔑  Key Points", secs["keypoints"]]
 
     if secs["example"]:
-        out += ["", f"{_DIVIDER}", "💡  Example", secs["example"]]
+        out += ["", f"{DIVIDER}", "💡  Example", secs["example"]]
 
     if secs["examtip"]:
-        out += ["", f"{_DIVIDER}", "🎯  Exam Tip", secs["examtip"]]
+        out += ["", f"{DIVIDER}", "🎯  Exam Tip", secs["examtip"]]
 
     if secs["diagram"]:
         out += [
             "",
-            f"{_DIVIDER}",
+            f"{DIVIDER}",
             "🖼 Diagram Hint",
             secs["diagram"]
         ]
 
-    out.append(f"\n{_DIVIDER}")
+    out.append(f"\n{DIVIDER}")
     formatted_response = "\n".join(out)
 
     # Parse formatted response into EducationData model

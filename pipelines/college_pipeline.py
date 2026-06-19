@@ -7,13 +7,11 @@ Returns PipelineResult instead of plain strings to enable
 structured data flow through the formatter layer.
 """
 
+from constants import DIVIDER
 from agents.extractor_agent  import extract_student_info
 from tools.college_predictor import predict_colleges
 from pipelines.pipeline_result import PipelineResult
 from backend.models.response_models import CollegeData
-
-
-_DIVIDER = "─" * 55
 
 
 def college_pipeline(query: str) -> PipelineResult:
@@ -61,13 +59,13 @@ def college_pipeline(query: str) -> PipelineResult:
     # ── Step 3: Format output ─────────────────────────────────────────────────
     lines = [
         "🎓  EAMCET College Prediction Results",
-        _DIVIDER,
+        DIVIDER,
         f"  Rank     : {user_data['rank']}",
         f"  Category : {user_data['category']}",
         f"  Gender   : {user_data['gender']}",
         f"  Branch   : {user_data['preferred_branch']}",
         f"  Location : {user_data['location'] or 'All Telangana'}",
-        _DIVIDER,
+        DIVIDER,
     ]
 
     def _section(emoji: str, label: str, df) -> list[str]:
@@ -85,7 +83,7 @@ def college_pipeline(query: str) -> PipelineResult:
     lines += _section("🔴", "DREAM — Lower Chance",   dream)
 
     lines += [
-        _DIVIDER,
+        DIVIDER,
         "ℹ️   Based on previous year EAMCET cutoffs. Actual allotment may vary.",
     ]
 

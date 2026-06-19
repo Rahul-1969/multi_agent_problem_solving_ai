@@ -13,14 +13,13 @@ The prompt enforces grounding: if the answer isn't in the PDF,
 the LLM is instructed to say so rather than hallucinate.
 """
 
+from constants import DIVIDER
 from utils.logger import get_logger
 import re
 from llm.ollama_client import call_llm, async_call_llm
 from tools.pdf_retriever import retrieve_chunks
 
 logger = get_logger(__name__)
-
-_DIVIDER = "─" * 55
 
 _SYSTEM = (
     "You are a precise document assistant. "
@@ -76,11 +75,11 @@ def _format_pdf_response(raw: str, ref_pages: list[int], filename: str) -> str:
 
     lines = [
         f"📄  ANSWER FROM: {filename}",
-        _DIVIDER,
+        DIVIDER,
         "",
         answer,
         "",
-        _DIVIDER,
+        DIVIDER,
         f"📌  References: {pages_line}",
     ]
 
