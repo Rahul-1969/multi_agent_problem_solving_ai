@@ -81,12 +81,30 @@ cors_origins = [
     if origin.strip()
 ]
 
+cors_methods = [
+    method.strip().upper()
+    for method in os.getenv(
+        "CORS_ALLOW_METHODS",
+        "GET,POST,PUT,DELETE,OPTIONS,PATCH",
+    ).split(",")
+    if method.strip()
+]
+
+cors_headers = [
+    header.strip()
+    for header in os.getenv(
+        "CORS_ALLOW_HEADERS",
+        "Content-Type,Authorization,X-Requested-With,Accept",
+    ).split(",")
+    if header.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=cors_methods,
+    allow_headers=cors_headers,
 )
 
 app.include_router(chat_router,      tags=["Chat"])
