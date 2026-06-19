@@ -13,8 +13,14 @@ const useAuthStore = create((set) => ({
   },
 
   login(userData) {
-    localStorage.setItem('neuralchat_user', JSON.stringify(userData))
-    set({ user: userData })
+    // Persist only non-sensitive profile data; tokens live in httpOnly cookies
+    const safeData = {
+      username: userData.username,
+      name: userData.name,
+      email: userData.email,
+    }
+    localStorage.setItem('neuralchat_user', JSON.stringify(safeData))
+    set({ user: safeData })
   },
 
   logout() {
@@ -31,10 +37,10 @@ const useAuthStore = create((set) => ({
 
     try {
       const parsed = JSON.parse(stored)
-      if (!parsed?.access_token || !parsed?.refresh_token) {
-        throw new Error('Invalid auth token data')
+      // Tokens are now httpOnly cookies; just verify user profile data exists
+      if (!parsed?.username) {
+        throw new Error('Invalid user data')
       }
-
       set({ user: parsed, initializing: false })
     } catch {
       localStorage.removeItem('neuralchat_user')

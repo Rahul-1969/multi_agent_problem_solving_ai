@@ -1,17 +1,23 @@
 from utils.logger import get_logger
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from backend.models.request_models import LoginRequest, RegisterRequest, RefreshRequest
 from backend.models.response_models import RegisterResponse, TokenResponse
 from backend.auth.jwt_service import create_access_token, create_refresh_token, decode_token
 from backend.auth.password_utils import verify_password, hash_password
 from backend.auth.user_store import user_store
 
+# Cookie settings (secure=False for localhost dev; set SECURE=True in production)
+_COOKIE_ACCESS_MAX_AGE = 30 * 60          # 30 minutes
+_COOKIE_REFRESH_MAX_AGE = 7 * 24 * 60 * 60  # 7 days
+_COOKIE_SAMESITE = "lax"
+_COOKIE_HTTPONLY = True
+
 logger = get_logger(__name__)
 
 router = APIRouter()
 
 @router.post("/login", response_model=TokenResponse, summary="Authenticate and receive tokens")
-def login(request: LoginRequest):
+def login(request: LoginRequest, response: Response):
     username = request.username.strip().lower()
     user = user_store.get_user(username) or user_store.get_user_by_email(username)
     if not user or not verify_password(request.password, user["hashed_password"]):
@@ -24,6 +30,24 @@ def login(request: LoginRequest):
 
     access_token = create_access_token(user["username"])
     refresh_token = create_refresh_token(user["username"])
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=_COOKIE_HTTPONLY,
+        secure=False,
+        samesite=_COOKIE_SAMESITE,
+        max_age=_COOKIE_ACCESS_MAX_AGE,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=_COOKIE_HTTPONLY,
+        secure=False,
+        samesite=_COOKIE_SAMESITE,
+        max_age=_COOKIE_REFRESH_MAX_AGE,
+    )
+
     logger.info("User %s authenticated successfully", user["username"])
     return TokenResponse(
         access_token=access_token,
@@ -74,9 +98,18 @@ def register(request: RegisterRequest):
 
 
 @router.post("/refresh", response_model=TokenResponse, summary="Refresh an access token")
-def refresh(request: RefreshRequest):
+def refresh(request: RefreshRequest, response: Response, http_request: Request):
+    refresh_token = request.refresh_token or http_request.cookies.get("refresh_token")
+    if not refresh_token:
+        logger.warning("Refresh attempt with no token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
-        payload = decode_token(request.refresh_token, expected_type="refresh")
+        payload = decode_token(refresh_token, expected_type="refresh")
     except Exception as exc:
         logger.warning("Invalid refresh attempt: %s", exc)
         raise HTTPException(
@@ -96,6 +129,24 @@ def refresh(request: RefreshRequest):
 
     access_token = create_access_token(user["username"])
     refresh_token = create_refresh_token(user["username"])
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=_COOKIE_HTTPONLY,
+        secure=False,
+        samesite=_COOKIE_SAMESITE,
+        max_age=_COOKIE_ACCESS_MAX_AGE,
+    )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=_COOKIE_HTTPONLY,
+        secure=False,
+        samesite=_COOKIE_SAMESITE,
+        max_age=_COOKIE_REFRESH_MAX_AGE,
+    )
+
     logger.info("Issued new access token for user %s", user["username"])
     return TokenResponse(
         access_token=access_token,
@@ -104,3 +155,20 @@ def refresh(request: RefreshRequest):
         name=user.get("name") or user["username"],
         email=user.get("email"),
     )
+
+
+@router.post("/logout", summary="Clear authentication cookies")
+def logout(response: Response):
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        httponly=_COOKIE_HTTPONLY,
+        samesite=_COOKIE_SAMESITE,
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        path="/",
+        httponly=_COOKIE_HTTPONLY,
+        samesite=_COOKIE_SAMESITE,
+    )
+    return {"success": True, "message": "Logged out"}

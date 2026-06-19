@@ -3,26 +3,17 @@ import useAuthStore from '../store/authStore'
 
 const DEFAULT_TIMEOUT = 120000
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-import { getStoredToken, clearStoredUser } from './authStorage'
-
-function getToken() {
-  return getStoredToken()
-}
+import { clearStoredUser } from './authStorage'
 
 const api = axios.create({
   baseURL: BASE_URL,
   timeout: DEFAULT_TIMEOUT,
+  withCredentials: true,
 })
 
+// Cookie-based auth sends tokens automatically; no Authorization header needed.
 api.interceptors.request.use(
-  (config) => {
-    const token = getStoredToken()
-    if (token) {
-      config.headers = config.headers || {}
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
+  (config) => config,
   (error) => Promise.reject(error),
 )
 

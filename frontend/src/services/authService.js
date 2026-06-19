@@ -14,41 +14,27 @@ function getStoredUser() {
   }
 }
 
-function saveStoredUser(data) {
+function saveUser(data) {
+  // Store only non-sensitive profile data (tokens live in httpOnly cookies)
   const userdata = {
-    ...data,
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
+    username: data.username,
+    name: data.name,
+    email: data.email,
   }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(userdata))
   return userdata
 }
 
-function getToken() {
-  const user = getStoredUser()
-  return user?.token || user?.access_token || null
-}
-
-function saveUser(data) {
-  return saveStoredUser(data)
-}
-
 async function login(usernameOrEmail, password) {
   const normalized = usernameOrEmail.trim().toLowerCase()
   const response = await apiService.post(LOGIN, { username: normalized, password })
-  return saveStoredUser(response.data)
+  return saveUser(response.data)
 }
 
 async function refreshToken() {
-  const user = getStoredUser()
-  if (!user?.refresh_token) {
-    throw new Error('No refresh token available.')
-  }
-
-  const response = await apiService.post(REFRESH, {
-    refresh_token: user.refresh_token,
-  })
-  return saveStoredUser({ ...user, ...response.data })
+  // Cookies send refresh_token automatically; body is optional
+  const response = await apiService.post(REFRESH, {})
+  return saveUser(response.data)
 }
 
 async function register(name, email, password) {
@@ -56,7 +42,12 @@ async function register(name, email, password) {
   return response.data
 }
 
-function logout() {
+async function logout() {
+  try {
+    await apiService.post('/auth/logout', {})
+  } catch {
+    // Best-effort: ignore errors if backend is unreachable
+  }
   localStorage.removeItem(STORAGE_KEY)
 }
 
@@ -64,7 +55,6 @@ export default {
   login,
   logout,
   refreshToken,
-  getToken,
   getStoredUser,
   register,
   saveUser,

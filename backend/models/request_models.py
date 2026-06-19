@@ -46,7 +46,9 @@ class RegisterRequest(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str = Field(..., min_length=1, description="Refresh token")
+    refresh_token: str | None = Field(
+        default=None, min_length=1, description="Refresh token (optional when using cookies)"
+    )
 
 
 class CollegeRequest(MessageRequest):
