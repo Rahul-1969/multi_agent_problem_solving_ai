@@ -64,6 +64,7 @@ class CodingData(BaseModel):
     code: str | None = None
     explanation: str | None = None
     complexity: str | None = None
+    tip: str | None = None
     clarification: list[str] | None = None
 
 

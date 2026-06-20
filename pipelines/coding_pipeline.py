@@ -292,6 +292,7 @@ def coding_pipeline(query: str) -> PipelineResult:
         code=code_content,
         explanation=explanation,
         complexity=complexity,
+        tip=tip,
     )
 
     return PipelineResult(response=formatted_response, data=coding_data)
