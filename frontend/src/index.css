@@ -80,7 +80,6 @@ html, body {
   width: 260px;
   background-color: var(--bg-sidebar);
   display: flex;
-  flex-col: true; /* Custom indicator for documentation */
   flex-direction: column;
   height: 100%;
   border-right: 1px solid var(--border-color);

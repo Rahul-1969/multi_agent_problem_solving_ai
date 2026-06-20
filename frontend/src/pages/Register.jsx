@@ -137,8 +137,8 @@ export default function Register() {
         </p>
 
         <div style={{ marginTop: "20px" }}>
-          <Link to="/chat" className="auth-link" style={{ fontSize: "13.5px", color: "var(--text-secondary)" }}>
-            ← Chat as Guest
+          <Link to="/" className="auth-link" style={{ fontSize: "13.5px", color: "var(--text-secondary)" }}>
+            ← Back to home
           </Link>
         </div>
       </div>
