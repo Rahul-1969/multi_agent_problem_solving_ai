@@ -5,7 +5,7 @@ PDF management and Q&A endpoints.
 
 import os
 import re
-from fastapi import APIRouter, Depends, UploadFile, File, Form
+from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
 from backend.models.pdf_models import (
@@ -29,6 +29,8 @@ from utils.logger import get_logger
 router = APIRouter()
 
 logger = get_logger(__name__)
+
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
 _WINDOWS_RESERVED = {
@@ -138,6 +140,11 @@ async def upload_pdf(
     try:
         with open(save_path, "wb") as file_obj:
             content = await file.read()
+            if len(content) > MAX_UPLOAD_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="File too large",
+                )
             file_obj.write(content)
 
         result = load_pdf(save_path, session_id)

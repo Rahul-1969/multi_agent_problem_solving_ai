@@ -1,4 +1,6 @@
 import os
+import time
+from collections import defaultdict
 from utils.logger import get_logger
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from backend.models.request_models import LoginRequest, RegisterRequest, RefreshRequest
@@ -14,6 +16,22 @@ _COOKIE_SAMESITE = "lax"
 _COOKIE_HTTPONLY = True
 _COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
 
+# Rate limiting — in-memory (restarts on deploy; use Redis for multi-node)
+_MAX_LOGIN_ATTEMPTS = 5
+_LOGIN_WINDOW_SECONDS = 15 * 60  # 15 minutes
+_login_attempts: defaultdict[str, list[float]] = defaultdict(list)
+
+
+def _is_rate_limited(key: str) -> bool:
+    now = time.time()
+    attempts = [t for t in _login_attempts[key] if now - t < _LOGIN_WINDOW_SECONDS]
+    _login_attempts[key] = attempts
+    return len(attempts) >= _MAX_LOGIN_ATTEMPTS
+
+
+def _record_attempt(key: str) -> None:
+    _login_attempts[key].append(time.time())
+
 logger = get_logger(__name__)
 
 router = APIRouter()
@@ -21,8 +39,15 @@ router = APIRouter()
 @router.post("/login", response_model=TokenResponse, summary="Authenticate and receive tokens")
 def login(request: LoginRequest, response: Response):
     username = request.username.strip().lower()
+    rate_key = f"login:{username}"
+    if _is_rate_limited(rate_key):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many login attempts. Please try again later.",
+        )
     user = user_store.get_user(username) or user_store.get_user_by_email(username)
     if not user or not verify_password(request.password, user["hashed_password"]):
+        _record_attempt(rate_key)
         logger.warning("Failed login attempt for value: %s", request.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
