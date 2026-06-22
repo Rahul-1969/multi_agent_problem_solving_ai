@@ -154,7 +154,11 @@ def medical_pipeline(query: str) -> PipelineResult:
         )
         return PipelineResult(
             response=emergency_response,
-            data=MedicalData(emergency="EMERGENCY - Seek immediate medical attention")
+            data=MedicalData(
+                emergency="EMERGENCY - Seek immediate medical attention",
+                symptoms=query,
+                when_to_consult="EMERGENCY - Seek immediate medical attention",
+            )
         )
 
     prompt = (
@@ -221,11 +225,18 @@ def medical_pipeline(query: str) -> PipelineResult:
     # Parse formatted response into MedicalData model
     parsed_sections = parse_sections(formatted_response, MEDICAL_LABELS)
 
+    conditions_text = parsed_sections.get("conditions", "").strip() or None
+    treatments_text = parsed_sections.get("treatments", "").strip() or None
+    emergency_text = parsed_sections.get("emergency", "").strip() or None
     medical_data = MedicalData(
-        conditions=parsed_sections.get("conditions", "").strip() or None,
-        treatments=parsed_sections.get("treatments", "").strip() or None,
+        conditions=conditions_text,
+        treatments=treatments_text,
         lifestyle=parsed_sections.get("lifestyle", "").strip() or None,
-        emergency=parsed_sections.get("emergency", "").strip() or None,
+        emergency=emergency_text,
+        symptoms=query,
+        possible_causes=[conditions_text] if conditions_text else None,
+        recommendations=treatments_text,
+        when_to_consult=emergency_text,
     )
 
     return PipelineResult(response=formatted_response, data=medical_data)

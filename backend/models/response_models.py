@@ -46,6 +46,14 @@ class EducationData(BaseModel):
     example: str | None = None
     exam_tip: str | None = None
 
+    # Frontend compatibility fields (P0-10)
+    title: str | None = None
+    explanation: str | None = None
+    diagram: str | None = None
+    key_formulas: list[str] | None = None
+    tips: list[str] | None = None
+    summary: str | None = None
+
 
 class MedicalData(BaseModel):
     model_config = MODEL_CONFIG
@@ -55,6 +63,12 @@ class MedicalData(BaseModel):
     lifestyle: str | None = None
     emergency: str | None = None
     disclaimer: str = MEDICAL_DISCLAIMER
+
+    # Frontend compatibility fields (P0-10)
+    symptoms: str | None = None
+    possible_causes: list[str] | None = None
+    recommendations: str | None = None
+    when_to_consult: str | None = None
 
 
 class CodingData(BaseModel):
@@ -66,6 +80,13 @@ class CodingData(BaseModel):
     complexity: str | None = None
     tip: str | None = None
     clarification: list[str] | None = None
+
+    # Frontend compatibility fields (P0-10)
+    title: str | None = None
+    time_complexity: str | None = None
+    space_complexity: str | None = None
+    output: str | None = None
+    key_points: list[str] | None = None
 
 
 class CollegeData(BaseModel):

@@ -250,7 +250,8 @@ def coding_pipeline(query: str) -> PipelineResult:
             response=validation_response,
             data=CodingData(
                 language=lang,
-                clarification=validation_msg.split("\n")
+                clarification=validation_msg.split("\n"),
+                title=query,
             )
         )
 
@@ -263,7 +264,7 @@ def coding_pipeline(query: str) -> PipelineResult:
         error_response = f"⚠️  LLM unavailable.\nError: {exc}"
         return PipelineResult(
             response=error_response,
-            data=CodingData(language=lang)
+            data=CodingData(language=lang, title=query)
         )
 
     cleaned = _clean_code_output(raw, lang)
@@ -293,6 +294,9 @@ def coding_pipeline(query: str) -> PipelineResult:
         explanation=explanation,
         complexity=complexity,
         tip=tip,
+        title=query,
+        time_complexity=complexity,
+        key_points=[tip] if tip else None,
     )
 
     return PipelineResult(response=formatted_response, data=coding_data)

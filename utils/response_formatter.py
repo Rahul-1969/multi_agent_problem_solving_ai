@@ -167,12 +167,20 @@ def format_education(response_str: str, query: str) -> EducationData:
     """
     sections = _parse_sections(response_str, EDUCATION_LABELS)
 
+    definition = _clean_section(sections.get("definition", ""))
+    key_points = _clean_section(sections.get("key_points", ""))
+    exam_tip = _clean_section(sections.get("exam_tip", ""))
+
     return EducationData(
         topic=query,
-        definition=_clean_section(sections.get("definition", "")),
-        key_points=_clean_section(sections.get("key_points", "")),
+        definition=definition,
+        key_points=key_points,
         example=_clean_section(sections.get("example", "")),
-        exam_tip=_clean_section(sections.get("exam_tip", "")),
+        exam_tip=exam_tip,
+        title=query,
+        explanation=definition,
+        key_formulas=[key_points] if key_points else None,
+        tips=[exam_tip] if exam_tip else None,
     )
 
 
@@ -185,11 +193,18 @@ def format_medical(response_str: str) -> MedicalData:
     """
     sections = _parse_sections(response_str, MEDICAL_LABELS)
 
+    conditions = _clean_section(sections.get("conditions", ""))
+    treatments = _clean_section(sections.get("treatments", ""))
+    emergency = _clean_section(sections.get("emergency", ""))
+
     return MedicalData(
-        conditions=_clean_section(sections.get("conditions", "")),
-        treatments=_clean_section(sections.get("treatments", "")),
+        conditions=conditions,
+        treatments=treatments,
         lifestyle=_clean_section(sections.get("lifestyle", "")),
-        emergency=_clean_section(sections.get("emergency", "")),
+        emergency=emergency,
+        possible_causes=[conditions] if conditions else None,
+        recommendations=treatments,
+        when_to_consult=emergency,
     )
 
 
@@ -227,11 +242,14 @@ def format_coding(response_str: str) -> CodingData:
     # Get complexity section
     complexity = sections.get("complexity", "").strip() or None
 
+    tip_text = sections.get("tip", "").strip()
     return CodingData(
         language=language,
         code=code,
         explanation=explanation_text,
         complexity=complexity,
+        time_complexity=complexity,
+        key_points=[tip_text] if tip_text else None,
     )
 
 

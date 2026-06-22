@@ -121,7 +121,7 @@ def education_pipeline(query: str) -> PipelineResult:
         error_response = f"⚠️  LLM unavailable.\nError: {exc}"
         return PipelineResult(
             response=error_response,
-            data=EducationData(topic=query)
+            data=EducationData(topic=query, title=query)
         )
 
     raw = clean_text(raw)
@@ -167,12 +167,19 @@ def education_pipeline(query: str) -> PipelineResult:
     # Parse formatted response into EducationData model
     parsed_sections = parse_sections(formatted_response, EDUCATION_LABELS)
 
+    definition_text = parsed_sections.get("definition", "").strip() or None
+    key_points_text = parsed_sections.get("key_points", "").strip() or None
+    exam_tip_text = parsed_sections.get("exam_tip", "").strip() or None
     education_data = EducationData(
         topic=query,
-        definition=parsed_sections.get("definition", "").strip() or None,
-        key_points=parsed_sections.get("key_points", "").strip() or None,
+        definition=definition_text,
+        key_points=key_points_text,
         example=parsed_sections.get("example", "").strip() or None,
-        exam_tip=parsed_sections.get("exam_tip", "").strip() or None,
+        exam_tip=exam_tip_text,
+        title=query,
+        explanation=definition_text,
+        key_formulas=[key_points_text] if key_points_text else None,
+        tips=[exam_tip_text] if exam_tip_text else None,
     )
 
     return PipelineResult(response=formatted_response, data=education_data)
