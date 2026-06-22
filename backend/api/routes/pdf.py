@@ -4,6 +4,7 @@ PDF management and Q&A endpoints.
 """
 
 import os
+import re
 from fastapi import APIRouter, Depends, UploadFile, File, Form
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
@@ -16,6 +17,7 @@ from backend.models.pdf_models import (
 )
 from backend.services.pdf_service import (
     answer_from_pdf,
+    async_answer_from_pdf,
     clear_pdf,
     get_pdf_status,
     load_pdf,
@@ -27,6 +29,23 @@ from utils.logger import get_logger
 router = APIRouter()
 
 logger = get_logger(__name__)
+
+
+_WINDOWS_RESERVED = {
+    "CON", "PRN", "AUX", "NUL",
+    *{f"COM{i}" for i in range(1, 10)},
+    *{f"LPT{i}" for i in range(1, 10)},
+}
+
+
+def _is_safe_filename(filename: str) -> bool:
+    """Reject null bytes, path separators, and Windows reserved names."""
+    if "\x00" in filename or "/" in filename or "\\" in filename:
+        return False
+    stem = filename.rsplit(".", 1)[0].upper()
+    if stem in _WINDOWS_RESERVED:
+        return False
+    return True
 
 
 def _resolve_session_id(session_id: str | None, current_user: TokenPayload) -> str:
@@ -52,10 +71,10 @@ def load_pdf_by_path(
             error="No path provided",
         )
 
-    # Prevent path traversal: resolve the requested path and ensure it stays
-    # within the allowed UPLOAD_DIR.
-    resolved_path = os.path.abspath(os.path.join(UPLOAD_DIR, path))
-    if os.path.commonpath([os.path.abspath(UPLOAD_DIR), resolved_path]) != os.path.abspath(UPLOAD_DIR):
+    # Prevent path traversal: resolve the requested path (follow symlinks) and
+    # ensure it stays within the allowed UPLOAD_DIR.
+    resolved_path = os.path.realpath(os.path.join(UPLOAD_DIR, path))
+    if os.path.commonpath([os.path.realpath(UPLOAD_DIR), resolved_path]) != os.path.realpath(UPLOAD_DIR):
         return PDFLoadResponse(
             success=False,
             session_id=session_id,
@@ -99,8 +118,17 @@ async def upload_pdf(
         )
 
     safe_filename = os.path.basename(file.filename)
+    if not safe_filename or not _is_safe_filename(safe_filename):
+        return PDFLoadResponse(
+            success=False,
+            session_id=session_id,
+            message="Invalid filename",
+            error="Filename contains unsafe characters",
+        )
+
     save_path = os.path.join(UPLOAD_DIR, safe_filename)
-    if not safe_filename or os.path.commonpath([os.path.abspath(UPLOAD_DIR), os.path.abspath(save_path)]) != os.path.abspath(UPLOAD_DIR):
+    resolved_save_path = os.path.realpath(save_path)
+    if os.path.commonpath([os.path.realpath(UPLOAD_DIR), resolved_save_path]) != os.path.realpath(UPLOAD_DIR):
         return PDFLoadResponse(
             success=False,
             session_id=session_id,
