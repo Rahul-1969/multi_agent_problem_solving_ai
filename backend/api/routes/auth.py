@@ -1,3 +1,4 @@
+import os
 from utils.logger import get_logger
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from backend.models.request_models import LoginRequest, RegisterRequest, RefreshRequest
@@ -6,11 +7,12 @@ from backend.auth.jwt_service import create_access_token, create_refresh_token, 
 from backend.auth.password_utils import verify_password, hash_password
 from backend.auth.user_store import user_store
 
-# Cookie settings (secure=False for localhost dev; set SECURE=True in production)
+# Cookie settings (secure=False for localhost dev; set COOKIE_SECURE=true in production)
 _COOKIE_ACCESS_MAX_AGE = 30 * 60          # 30 minutes
 _COOKIE_REFRESH_MAX_AGE = 7 * 24 * 60 * 60  # 7 days
 _COOKIE_SAMESITE = "lax"
 _COOKIE_HTTPONLY = True
+_COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
 
 logger = get_logger(__name__)
 
@@ -35,7 +37,7 @@ def login(request: LoginRequest, response: Response):
         key="access_token",
         value=access_token,
         httponly=_COOKIE_HTTPONLY,
-        secure=False,
+        secure=_COOKIE_SECURE,
         samesite=_COOKIE_SAMESITE,
         max_age=_COOKIE_ACCESS_MAX_AGE,
     )
@@ -43,7 +45,7 @@ def login(request: LoginRequest, response: Response):
         key="refresh_token",
         value=refresh_token,
         httponly=_COOKIE_HTTPONLY,
-        secure=False,
+        secure=_COOKIE_SECURE,
         samesite=_COOKIE_SAMESITE,
         max_age=_COOKIE_REFRESH_MAX_AGE,
     )
@@ -134,7 +136,7 @@ def refresh(request: RefreshRequest, response: Response, http_request: Request):
         key="access_token",
         value=access_token,
         httponly=_COOKIE_HTTPONLY,
-        secure=False,
+        secure=_COOKIE_SECURE,
         samesite=_COOKIE_SAMESITE,
         max_age=_COOKIE_ACCESS_MAX_AGE,
     )
@@ -142,7 +144,7 @@ def refresh(request: RefreshRequest, response: Response, http_request: Request):
         key="refresh_token",
         value=refresh_token,
         httponly=_COOKIE_HTTPONLY,
-        secure=False,
+        secure=_COOKIE_SECURE,
         samesite=_COOKIE_SAMESITE,
         max_age=_COOKIE_REFRESH_MAX_AGE,
     )

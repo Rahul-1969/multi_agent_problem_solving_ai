@@ -6,14 +6,7 @@ from typing import Any
 from config.path_config import DATA_DIR
 
 DEFAULT_USER_FILENAME = os.path.join(DATA_DIR, "users.json")
-DEFAULT_USER_STORE = {
-    "admin": {
-        "username": "admin",
-        "name": "Admin User",
-        "email": "admin@example.com",
-        "hashed_password": "$2b$12$KbQi8/vBE7lMZ3X3P2s6YexqQvEwz2LfBipCv0FR7gVSFj6dSUdk5W",
-    }
-}
+DEFAULT_USER_STORE = {}
 
 
 class UserStore:

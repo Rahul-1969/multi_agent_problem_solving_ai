@@ -1,34 +1,48 @@
-try:
-    import jwt
-except ImportError as exc:
-    raise RuntimeError(
-        "Missing required package 'PyJWT'. Install dependencies with: `python -m pip install -r requirements.txt`"
-    ) from exc
-import os
-from datetime import datetime, timedelta, timezone
-from typing import Final
-from backend.auth.token_models import TokenPayload
+"""backend/auth/jwt_service.py
+JWT token creation and verification.
+"""
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError(
-        "JWT_SECRET_KEY environment variable must be configured."
-    )
-ALGORITHM: Final[str] = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = 30
-REFRESH_TOKEN_EXPIRE_DAYS: Final[int] = 7
+import os
+import jwt
+from datetime import datetime, timedelta, timezone
+
+from backend.auth.token_models import TokenPayload
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+_ACCESS_SECRET_KEY: str | None = os.getenv("JWT_ACCESS_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+_REFRESH_SECRET_KEY: str | None = os.getenv("JWT_REFRESH_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+
+# Backward-compatible alias
+SECRET_KEY = _ACCESS_SECRET_KEY
+
+
+def _ensure_secrets() -> None:
+    if not _ACCESS_SECRET_KEY:
+        raise RuntimeError(
+            "JWT_ACCESS_SECRET_KEY or JWT_SECRET_KEY environment variable must be configured."
+        )
+    if not _REFRESH_SECRET_KEY:
+        raise RuntimeError(
+            "JWT_REFRESH_SECRET_KEY or JWT_SECRET_KEY environment variable must be configured."
+        )
 
 
 def _create_token(data: dict, expires_delta: timedelta) -> str:
-    payload = data.copy()
-    payload["exp"] = datetime.now(timezone.utc) + expires_delta
-    payload["iat"] = datetime.now(timezone.utc)
-    token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-    return token if isinstance(token, str) else token.decode("utf-8")
+    _ensure_secrets()
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + expires_delta
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
+    key = _ACCESS_SECRET_KEY if to_encode.get("type") == "access" else _REFRESH_SECRET_KEY
+    return jwt.encode(to_encode, key, algorithm=ALGORITHM)
 
 
 def create_access_token(username: str) -> str:
-    """Create a short-lived access token for a user."""
     return _create_token(
         {"sub": username, "type": "access"},
         timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
@@ -36,38 +50,35 @@ def create_access_token(username: str) -> str:
 
 
 def create_refresh_token(username: str) -> str:
-    """Create a longer-lived refresh token for a user."""
     return _create_token(
         {"sub": username, "type": "refresh"},
         timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
 
+def verify_refresh_token(token: str) -> TokenPayload:
+    return decode_token(token, expected_type="refresh")
+
+
 def decode_token(token: str, expected_type: str | None = None) -> TokenPayload:
-    """Decode a JWT and return validated TokenPayload.
-
-    Args:
-        token: The JWT string to decode.
-        expected_type: If provided, validate the token's 'type' claim matches.
-
-    Raises:
-        jwt.ExpiredSignatureError: If token has expired
-        jwt.InvalidTokenError: If token is invalid or malformed
-        ValueError: If token is missing required 'sub' claim or wrong token type
-    """
+    _ensure_secrets()
+    key = _ACCESS_SECRET_KEY
+    if expected_type == "refresh":
+        key = _REFRESH_SECRET_KEY
     try:
-        # Validate signature and expiration (exp claim is checked automatically)
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise ValueError("Token missing subject")
-        token_type = payload.get("type")
-        if expected_type is not None and token_type != expected_type:
-            raise ValueError(
-                f"Expected {expected_type} token, got {token_type}"
-            )
-        return TokenPayload(username=username)
+        payload = jwt.decode(token, key, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:
-        raise jwt.ExpiredSignatureError("Token has expired")
-    except jwt.InvalidTokenError as exc:
-        raise jwt.InvalidTokenError(f"Invalid token: {exc}")
+        raise ValueError("Token has expired") from None
+    except jwt.InvalidTokenError:
+        raise ValueError("Invalid token") from None
+
+    token_type = payload.get("type")
+    if expected_type and token_type != expected_type:
+        type_label = expected_type if expected_type else "None"
+        raise ValueError(f"Expected {expected_type} token, got {token_type}")
+
+    if "sub" not in payload:
+        raise ValueError("Token missing subject")
+
+    username = payload["sub"]
+    return TokenPayload(username=username)

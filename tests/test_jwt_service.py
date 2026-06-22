@@ -20,15 +20,18 @@ class TestSecretKeyConfiguration:
     """Tests for SECRET_KEY runtime validation on module import."""
 
     def test_runtime_error_when_jwt_secret_key_missing(self, monkeypatch):
-        """Importing jwt_service without JWT_SECRET_KEY must raise RuntimeError."""
+        """Creating a token without JWT_SECRET_KEY must raise RuntimeError."""
         monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+        monkeypatch.delenv("JWT_ACCESS_SECRET_KEY", raising=False)
+        monkeypatch.delenv("JWT_REFRESH_SECRET_KEY", raising=False)
 
         import sys
         monkeypatch.delitem(sys.modules, "backend.auth.jwt_service", raising=False)
         monkeypatch.delitem(sys.modules, "backend.auth", raising=False)
 
-        with pytest.raises(RuntimeError, match="JWT_SECRET_KEY environment variable must be configured."):
-            import backend.auth.jwt_service
+        import backend.auth.jwt_service as jwt_module
+        with pytest.raises(RuntimeError, match="JWT_ACCESS_SECRET_KEY or JWT_SECRET_KEY"):
+            jwt_module._ensure_secrets()
 
     def test_imports_successfully_when_jwt_secret_key_set(self, monkeypatch):
         """Importing jwt_service with JWT_SECRET_KEY set must succeed."""
@@ -39,6 +42,8 @@ class TestSecretKeyConfiguration:
 
         import backend.auth.jwt_service as jwt_module
         assert jwt_module.SECRET_KEY == "a-valid-secret-key"
+        assert jwt_module._ACCESS_SECRET_KEY == "a-valid-secret-key"
+        assert jwt_module._REFRESH_SECRET_KEY == "a-valid-secret-key"
 
 
 class TestTokenCreation:
@@ -115,11 +120,11 @@ class TestDecodeToken:
             {"sub": "alice", "type": "access"},
             timedelta(seconds=-1),
         )
-        with pytest.raises(jwt.ExpiredSignatureError):
+        with pytest.raises(ValueError, match="Token has expired"):
             decode_token(expired_token)
 
     def test_decode_invalid_token_raises(self):
-        with pytest.raises(jwt.InvalidTokenError):
+        with pytest.raises(ValueError, match="Invalid token"):
             decode_token("not.a.real.token")
 
     def test_decode_token_missing_sub_raises_value_error(self):
