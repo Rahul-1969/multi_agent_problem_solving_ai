@@ -3,6 +3,7 @@ backend/api/routes/coding.py
 Dedicated coding endpoint.
 """
 
+import asyncio
 from fastapi import APIRouter, Depends
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
@@ -14,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/coding", response_model=ChatResponse, summary="Ask a coding question")
-def coding(request: CodingRequest, current_user: TokenPayload = Depends(get_current_user)):
+async def coding(request: CodingRequest, current_user: TokenPayload = Depends(get_current_user)):
     """Direct coding queries — code generation, debugging, algorithms."""
-    result: ChatResponse = process_query(request.message)
+    result: ChatResponse = await asyncio.to_thread(process_query, request.message)
     return result

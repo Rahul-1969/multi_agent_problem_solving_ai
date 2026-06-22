@@ -3,6 +3,7 @@ backend/api/routes/chat.py
 Unified chat endpoint plus chat history routes for authenticated users.
 """
 
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
@@ -72,7 +73,7 @@ def append_chat_message(chat_id: str, request: ChatMessageRequest, current_user:
 
 
 @router.post("/chat", response_model=ChatResponse, summary="Send a query to the chatbot")
-def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_current_user)):
+async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_current_user)):
     """
     Auto-routed endpoint. Returns:
     - domain: which pipeline handled the query
@@ -101,7 +102,7 @@ def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_current_
             },
         )
 
-    result = process_query(request.message)
+    result = await asyncio.to_thread(process_query, request.message)
 
     if request.chat_id:
         chat_history_manager.append_message(
@@ -133,6 +134,6 @@ def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_current_
 
 
 @router.post("/chat/stream", summary="Send a query and receive a streaming text response")
-def chat_stream(request: ChatRequest, current_user: TokenPayload = Depends(get_current_user)):
-    result = process_query(request.message)
+async def chat_stream(request: ChatRequest, current_user: TokenPayload = Depends(get_current_user)):
+    result = await asyncio.to_thread(process_query, request.message)
     return create_text_streaming_response(result.response)

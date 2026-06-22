@@ -3,6 +3,7 @@ backend/api/routes/medical.py
 Dedicated medical endpoint.
 """
 
+import asyncio
 from fastapi import APIRouter, Depends
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
@@ -14,7 +15,7 @@ router = APIRouter()
 
 
 @router.post("/medical", response_model=ChatResponse, summary="Ask a medical question")
-def medical(request: MedicalRequest, current_user: TokenPayload = Depends(get_current_user)):
+async def medical(request: MedicalRequest, current_user: TokenPayload = Depends(get_current_user)):
     """Direct medical queries — symptoms, conditions, lifestyle advice."""
-    result: ChatResponse = process_query(request.message)
+    result: ChatResponse = await asyncio.to_thread(process_query, request.message)
     return result
