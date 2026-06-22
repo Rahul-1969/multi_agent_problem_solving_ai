@@ -12,11 +12,9 @@ export function getStoredUser() {
 }
 
 export function saveStoredUser(data) {
-  const userdata = {
-    ...data,
-    access_token: data.access_token,
-    refresh_token: data.refresh_token,
-  }
+  const userdata = { ...data }
+  delete userdata.access_token
+  delete userdata.refresh_token
   localStorage.setItem(STORAGE_KEY, JSON.stringify(userdata))
   return userdata
 }
@@ -25,7 +23,4 @@ export function clearStoredUser() {
   localStorage.removeItem(STORAGE_KEY)
 }
 
-export function getStoredToken() {
-  const user = getStoredUser()
-  return user?.access_token || null
-}
+

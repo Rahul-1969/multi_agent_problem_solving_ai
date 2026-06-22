@@ -32,9 +32,7 @@ const pdfService = {
     if (sessionId) {
       formData.append('session_id', sessionId)
     }
-    const response = await apiService.post(PDF_UPLOAD, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const response = await apiService.post(PDF_UPLOAD, formData)
     return response.data
   },
 
