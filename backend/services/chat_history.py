@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from threading import Lock
 from typing import Any
 from uuid import uuid4
@@ -44,7 +44,7 @@ class ChatHistoryManager:
             pass
 
     def _now_iso(self) -> str:
-        return datetime.utcnow().isoformat(timespec="seconds") + "Z"
+        return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     def _user_chats(self, username: str) -> dict[str, dict[str, Any]]:
         return self._store.setdefault(username, {})

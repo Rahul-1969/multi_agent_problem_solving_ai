@@ -2,7 +2,7 @@ import os
 import pytest
 import jwt
 
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 from backend.auth.jwt_service import (
     SECRET_KEY,
@@ -68,9 +68,8 @@ class TestTokenCreation:
     def test_access_token_expiration(self):
         token = create_access_token("alice")
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        expected_max_exp = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)
-        expected_min_exp = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES - 1)
-        from datetime import timezone
+        expected_max_exp = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES + 1)
+        expected_min_exp = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES - 1)
         exp_dt = datetime.fromtimestamp(payload["exp"], tz=timezone.utc).replace(tzinfo=None)
         assert expected_min_exp <= exp_dt <= expected_max_exp
 
