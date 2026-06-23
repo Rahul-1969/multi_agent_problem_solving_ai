@@ -31,19 +31,20 @@ from schemas.education_schema import EDUCATION_LABELS
 from backend.models.response_models import EducationData
 
 logger = get_logger(__name__)
-_TOKEN_CAP :final = {"low": 250, "medium": 350, "high": 500}
+_TOKEN_CAP :final = {"low": 400, "medium": 1200, "high": 1200}
 
 _SYSTEM = (
     "You are an experienced computer science professor.\n"
-    "Write factual and exam-oriented answers.\n"
+    "Write detailed, factual, and exam-oriented answers suitable for B.Tech students.\n"
     "No filler phrases.\n"
     "No markdown.\n"
     "No bold.\n"
     "Plain English.\n"
-    "Keep sections short.\n"
-    "Always provide a definition.\n"
-    "Always provide key points.\n"
+    "Always provide ALL of the following sections:\n"
+    "  Definition, Explanation, Working or Principles, Key Features,\n"
+    "  Advantages, Disadvantages, Applications, Example, and Summary.\n"
     "Use bullet points when appropriate.\n"
+    "Write thorough, long answers. Do not skip any section.\n"
 )
 
 _SECTION_LABELS :final = {
@@ -56,6 +57,10 @@ _SECTION_LABELS :final = {
         "ADVANTAGES",
         "DIFFERENCES",
     ],
+    "working": ["WORKING", "PRINCIPLE", "PRINCIPLES", "HOW IT WORKS"],
+    "advantages": ["ADVANTAGES", "ADVANTAGE", "PROS", "BENEFITS"],
+    "disadvantages": ["DISADVANTAGES", "DISADVANTAGE", "CONS", "DRAWBACKS"],
+    "applications": ["APPLICATIONS", "APPLICATION", "USES", "USE CASES"],
     "example": ["EXAMPLE"],
     "examtip": ["EXAM TIP"],
     "diagram": [
@@ -64,6 +69,7 @@ _SECTION_LABELS :final = {
         "FLOWCHART",
         "BLOCK DIAGRAM",
     ],
+    "summary": ["SUMMARY", "CONCLUSION"],
 }
 
 _BULLET_PATTERN = re.compile(r"^[\-\*\u2022].+", re.MULTILINE)
@@ -83,13 +89,20 @@ def _build_prompt(query: str, level: str) -> str:
         "DEFINITION:\n"
         "(define the topic in 2 sentences)\n\n"
         "KEY POINTS:\n"
-        "(3 bullet points starting with -)\n\n"
+        "(3-5 bullet points starting with -)\n\n"
+        "WORKING:\n"
+        "(explain how it works or its core principles)\n\n"
     )
     if level in ("medium", "high"):
         base += (
+            "ADVANTAGES:\n"
+            "(list advantages or benefits)\n\n"
+            "DISADVANTAGES:\n"
+            "(list disadvantages or drawbacks)\n\n"
+            "APPLICATIONS:\n"
+            "(list real-world applications)\n\n"
             "EXAMPLE:\n"
             "(one real-world example in 1-2 sentences)\n\n"
-
             "EXAM TIP:\n"
             "(one commonly tested fact or question pattern)\n\n"
         )
@@ -99,7 +112,12 @@ def _build_prompt(query: str, level: str) -> str:
             "DIAGRAM:\n"
             "(simple flow or block representation if applicable)\n\n"
         )
-    base += "Do NOT use bold, headers, or markdown. Keep every section brief."
+
+    base += (
+        "SUMMARY:\n"
+        "(1-2 sentence summary)\n\n"
+        "Do NOT use bold, headers, or markdown. Keep every section brief."
+    )
     return base
 
 
@@ -147,6 +165,18 @@ def education_pipeline(query: str) -> PipelineResult:
     if secs["keypoints"]:
         out += ["", f"{DIVIDER}", "🔑  Key Points", secs["keypoints"]]
 
+    if secs.get("working"):
+        out += ["", f"{DIVIDER}", "⚙️  Working", secs["working"]]
+
+    if secs.get("advantages"):
+        out += ["", f"{DIVIDER}", "✅  Advantages", secs["advantages"]]
+
+    if secs.get("disadvantages"):
+        out += ["", f"{DIVIDER}", "❌  Disadvantages", secs["disadvantages"]]
+
+    if secs.get("applications"):
+        out += ["", f"{DIVIDER}", "🚀  Applications", secs["applications"]]
+
     if secs["example"]:
         out += ["", f"{DIVIDER}", "💡  Example", secs["example"]]
 
@@ -158,8 +188,11 @@ def education_pipeline(query: str) -> PipelineResult:
             "",
             f"{DIVIDER}",
             "🖼 Diagram Hint",
-            secs["diagram"]
+            secs["diagram"],
         ]
+
+    if secs.get("summary"):
+        out += ["", f"{DIVIDER}", "📝  Summary", secs["summary"]]
 
     out.append(f"\n{DIVIDER}")
     formatted_response = "\n".join(out)
@@ -174,8 +207,13 @@ def education_pipeline(query: str) -> PipelineResult:
         topic=query,
         definition=definition_text,
         key_points=key_points_text,
+        working=parsed_sections.get("working", "").strip() or None,
+        advantages=parsed_sections.get("advantages", "").strip() or None,
+        disadvantages=parsed_sections.get("disadvantages", "").strip() or None,
+        applications=parsed_sections.get("applications", "").strip() or None,
         example=parsed_sections.get("example", "").strip() or None,
         exam_tip=exam_tip_text,
+        summary=parsed_sections.get("summary", "").strip() or None,
         title=query,
         explanation=definition_text,
         key_formulas=[key_points_text] if key_points_text else None,

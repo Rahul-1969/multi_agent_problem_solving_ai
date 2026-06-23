@@ -46,13 +46,19 @@ class EducationData(BaseModel):
     example: str | None = None
     exam_tip: str | None = None
 
+    # Expanded education fields
+    working: str | None = None
+    advantages: str | None = None
+    disadvantages: str | None = None
+    applications: str | None = None
+    summary: str | None = None
+
     # Frontend compatibility fields (P0-10)
     title: str | None = None
     explanation: str | None = None
     diagram: str | None = None
     key_formulas: list[str] | None = None
     tips: list[str] | None = None
-    summary: str | None = None
 
 
 class MedicalData(BaseModel):

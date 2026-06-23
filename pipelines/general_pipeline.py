@@ -23,7 +23,6 @@ import re
 from llm.ollama_client  import call_llm
 from utils.complexity   import detect_complexity
 from utils.text_cleaner import clean_text
-from utils.agent_executor import run_agents
 from pipelines.pipeline_result import PipelineResult
 from backend.models.response_models import GeneralData
 
@@ -40,10 +39,18 @@ _GENERAL_SYSTEM = (
 )
 
 _EXPLANATORY_SYSTEM = (
-    "Explain clearly and logically.\n"
-    "Use short paragraphs.\n"
-    "Use examples if helpful.\n"
-    "Avoid filler.\n"
+    "Provide a detailed and structured explanation suitable for B.Tech and university exams.\n"
+    "Include ALL of the following sections:\n"
+    "1. Definition\n"
+    "2. Explanation\n"
+    "3. Working or Principles\n"
+    "4. Key Points\n"
+    "5. Advantages and Disadvantages (if applicable)\n"
+    "6. Applications\n"
+    "7. Example\n"
+    "8. Summary\n"
+    "Use headings and bullet points.\n"
+    "Write long, thorough answers. Do not skip any section.\n"
 )
 
 # ── Compiled patterns (built once at import time) ─────────────────────────────
@@ -77,9 +84,9 @@ _EXPLANATORY_RE = re.compile(
 
 _TOKEN_CAP = {
     "conversational": 150,
-    "factual": 250,
-    "explanatory": 350,
-    "general": 300,
+    "factual": 400,
+    "explanatory": 1200,
+    "general": 800,
 }
 
 def _query_type(query: str) -> str:
@@ -130,21 +137,12 @@ def general_pipeline(query: str) -> PipelineResult:
         return PipelineResult(response=response, data=GeneralData(answer=response))
 
     if qtype == "explanatory":
-        # Explanatory — use agent chain for better quality
-        try:
-            response = run_agents(query, complexity_override=level)
-            return PipelineResult(response=response, data=GeneralData(answer=response))
-        except Exception:
-            logger.exception(
-                "Agent chain failed, falling back",
-            )
-
-            response = _call_safe(
-                query,
-                tokens=_TOKEN_CAP["explanatory"],
-                system=_EXPLANATORY_SYSTEM
-            )
-            return PipelineResult(response=response, data=GeneralData(answer=response))
+        response = _call_safe(
+            query,
+            tokens=_TOKEN_CAP["explanatory"],
+            system=_EXPLANATORY_SYSTEM,
+        )
+        return PipelineResult(response=response, data=GeneralData(answer=response))
 
     # General fallback
     response = _call_safe(query, tokens=_TOKEN_CAP["general"], system=_GENERAL_SYSTEM)

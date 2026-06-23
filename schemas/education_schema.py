@@ -25,6 +25,11 @@ EDUCATION_LABELS: Final[LabelMap] = {
     "key_points": ["🔑  Key Points"],
     "example": ["💡  Example"],
     "exam_tip": ["🎯  Exam Tip"],
+    "working": ["⚙️  Working"],
+    "advantages": ["✅  Advantages"],
+    "disadvantages": ["❌  Disadvantages"],
+    "applications": ["🚀  Applications"],
+    "summary": ["📝  Summary"],
 }
 
 
