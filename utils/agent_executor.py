@@ -103,9 +103,12 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
     Raises:
         Returns error message on failure (does not raise).
     """
-    start_time = time.time()
+    pipeline_start = time.time()
     refiner_used = False
     expert_used = False
+    base_elapsed = 0.0
+    refiner_elapsed = 0.0
+    expert_elapsed = 0.0
 
     try:
         # 1. Detect complexity
@@ -121,6 +124,7 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
 
         if level == "low":
             logger.info("Low complexity detected — using cached base result")
+            base_start = time.time()
             try:
                 base_result = _cached_base_result(query)
             except Exception:
@@ -129,8 +133,10 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
                     f"{_OLLAMA_ERROR_MESSAGE}\n"
                     "The base agent could not process your query."
                 )
+            base_elapsed = time.time() - base_start
+            logger.info("Base agent completed in %.2fs", base_elapsed)
 
-            elapsed = time.time() - start_time
+            elapsed = time.time() - pipeline_start
             logger.info(
                 (
                     "Agents | complexity=%s | tokens=%d | confidence=%.2f | "
@@ -144,6 +150,7 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
             return base_result.answer
 
         # 2. Run base agent
+        base_start = time.time()
         try:
             base_result = _run_base(query)
         except Exception:
@@ -152,26 +159,34 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
                 f"{_OLLAMA_ERROR_MESSAGE}\n"
                 "The base agent could not process your query."
             )
+        base_elapsed = time.time() - base_start
+        logger.info("Base agent completed in %.2fs", base_elapsed)
 
         # 3. Decide: run refiner?
         refiner_error = False
         if should_run_refiner(base_result, level):
+            refiner_start = time.time()
             try:
                 base_result = _run_refiner(base_result)
                 refiner_used = True
             except Exception:
                 logger.exception("Refiner failed")
                 refiner_error = True
+            refiner_elapsed = time.time() - refiner_start
+            logger.info("Refiner completed in %.2fs", refiner_elapsed)
 
         # 4. Decide: run expert?
         expert_error = False
         if should_run_expert(base_result, level):
+            expert_start = time.time()
             try:
                 base_result = _run_expert(base_result, query)
                 expert_used = True
             except Exception:
                 logger.exception("Expert failed")
                 expert_error = True
+            expert_elapsed = time.time() - expert_start
+            logger.info("Expert completed in %.2fs", expert_elapsed)
 
         # 5. Extract final answer
         final_answer = base_result.answer
@@ -181,17 +196,22 @@ def run_agents(query: str, complexity_override: ComplexityLevel | None = None) -
             final_answer += "\n\n[Expert step failed: the answer above may not include deep insights.]"
 
         # 6. Log execution statistics
-        elapsed = time.time() - start_time
+        elapsed = time.time() - pipeline_start
         logger.info(
             (
                 "Agents | complexity=%s | tokens=%d | confidence=%.2f | "
-                "refiner=%s | expert=%s | elapsed=%.2fs"
+                "refiner=%s | expert=%s | "
+                "base=%.2fs | refiner=%.2fs | expert=%.2fs | "
+                "pipeline total=%.2fs"
             ),
             level,
             base_result.tokens,
             base_result.confidence,
             "yes" if refiner_used else "no",
             "yes" if expert_used else "no",
+            base_elapsed,
+            refiner_elapsed,
+            expert_elapsed,
             elapsed,
         )
 

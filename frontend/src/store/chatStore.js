@@ -8,6 +8,7 @@ const useChatStore = create((set, get) => ({
   activeChatId: null,
   activeChat: null,
   isLoading: false,
+  currentDomain: 'general',
 
   setChats(chats) {
     set({ chats })
@@ -26,6 +27,10 @@ const useChatStore = create((set, get) => ({
 
   setIsLoading(isLoading) {
     set({ isLoading })
+  },
+
+  setCurrentDomain(domain) {
+    set({ currentDomain: domain || 'general' })
   },
 
   async loadChats() {
@@ -110,7 +115,21 @@ const useChatStore = create((set, get) => ({
       currentChatId = get().activeChatId
     }
 
-    set({ isLoading: true })
+    const loadingId = `loading-${Date.now()}`
+
+    // Optimistically add user message + loading placeholder
+    set((state) => ({
+      activeChat: {
+        ...state.activeChat,
+        messages: [
+          ...(state.activeChat?.messages || []),
+          { sender: 'user', content: trimmed, domain: 'user' },
+          { sender: 'bot', content: '', domain: 'loading', id: loadingId },
+        ],
+      },
+    }))
+
+    set({ isLoading: true, currentDomain: 'general' })
 
     try {
       if (pdfStatus?.loaded) {
@@ -140,17 +159,58 @@ const useChatStore = create((set, get) => ({
         }))
       } else {
         const result = await chatService.sendMessage(trimmed, currentChatId)
+
+        // Derive domain from the response for pipeline visibility
+        const domain = result?.domain || 'general'
+        set({ currentDomain: domain })
+
         if (result?.success) {
+          const botMessage = {
+            sender: 'bot',
+            content: result.response || '',
+            domain: domain,
+            data: result.data || null,
+            text: result.response || '',
+          }
+
+          // Replace the loading placeholder with the real bot message
+          // or append fallback if no backend messages available
+          set((state) => {
+            const prevMessages = state.activeChat?.messages || []
+            const filtered = prevMessages.filter((m) => m.id !== loadingId)
+
+            // Prefer the backend-provided message list if it contains
+            // both the user message and the bot answer.
+            const backendMessages = result.messages
+            const hasBackendMessages = Array.isArray(backendMessages) && backendMessages.length > 0
+
+            const nextMessages = hasBackendMessages
+              ? backendMessages
+              : [...filtered, botMessage]
+
+            return {
+              activeChat: {
+                ...state.activeChat,
+                messages: nextMessages,
+              },
+              chats: state.chats.map((chat) =>
+                chat.id === currentChatId
+                  ? { ...chat, updated_at: new Date().toISOString() }
+                  : chat,
+              ),
+            }
+          })
+        } else {
+          // Replace loading with error message
           set((state) => ({
             activeChat: {
               ...state.activeChat,
-              messages: result.messages || state.activeChat?.messages || [],
+              messages: (state.activeChat?.messages || []).filter((m) => m.id !== loadingId).concat({
+                sender: 'bot',
+                content: result?.error || 'Something went wrong. Please try again.',
+                domain: 'general',
+              }),
             },
-            chats: state.chats.map((chat) =>
-              chat.id === currentChatId
-                ? { ...chat, updated_at: new Date().toISOString() }
-                : chat,
-            ),
           }))
         }
       }
@@ -158,10 +218,13 @@ const useChatStore = create((set, get) => ({
       set((state) => ({
         activeChat: {
           ...state.activeChat,
-          messages: [
-            ...(state.activeChat?.messages || []),
-            { sender: 'bot', content: 'Something went wrong. Please try again.', domain: 'general' },
-          ],
+          messages: (state.activeChat?.messages || [])
+            .filter((m) => m.id !== loadingId)
+            .concat({
+              sender: 'bot',
+              content: 'Something went wrong. Please try again.',
+              domain: 'general',
+            }),
         },
       }))
       throw err

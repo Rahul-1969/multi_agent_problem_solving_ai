@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
-import { Sparkles, Terminal, GraduationCap, Stethoscope, BookOpen } from "lucide-react";
+import { Terminal, GraduationCap, Stethoscope, BookOpen } from "lucide-react";
 
 export default function ChatWindow({ messages, isLoading, onSelectPrompt }) {
   const scrollRef = useRef(null);
@@ -66,29 +66,14 @@ export default function ChatWindow({ messages, isLoading, onSelectPrompt }) {
         ) : (
           messages.map((msg, index) => (
             <MessageBubble
-              key={index}
+              key={msg.id || index}
               sender={msg.sender}
-              text={msg.text}
+              text={msg.text ?? msg.content}
+              content={msg.content}
               domain={msg.domain}
               data={msg.data}
             />
           ))
-        )}
-
-        {/* Loading / Typing indicator */}
-        {isLoading && (
-          <div className="message-row bot-row">
-            <div className="message-avatar-container bot" title="NeuralChat Bot">
-              <Sparkles size={14} />
-            </div>
-            <div className="message-content">
-              <div className="typing-indicator">
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-                <div className="typing-dot"></div>
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </div>

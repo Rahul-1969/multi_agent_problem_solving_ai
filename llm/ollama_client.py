@@ -139,6 +139,54 @@ async def async_call_llm(
     )
 
 
+def stream_llm(
+    prompt: str,
+    system: str = "",
+    num_predict: int = 512,
+    temperature: float = 0.3,
+):
+    """
+    Stream tokens from the local Ollama LLM.
+
+    Yields text chunks as they arrive from the model.
+    Falls back to the non-streaming path if Ollama returns
+    a single JSON payload.
+    """
+    payload = {
+        "model": MODEL_NAME,
+        "prompt": prompt.strip(),
+        "stream": True,
+        "options": {
+            "temperature": temperature,
+            "num_predict": num_predict,
+        },
+    }
+    if system:
+        payload["system"] = system.strip()
+
+    try:
+        with _SESSION.post(
+            OLLAMA_ENDPOINT, json=payload, timeout=REQUEST_TIMEOUT, stream=True
+        ) as resp:
+            resp.raise_for_status()
+            for line in resp.iter_lines():
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                chunk = obj.get("response", "")
+                if chunk:
+                    yield chunk
+                if obj.get("done", False):
+                    break
+    except requests.exceptions.RequestException:
+        logger.exception("Ollama streaming request failed")
+        # Fall back to non-streaming so the caller still gets an answer
+        yield call_llm(prompt, system, num_predict, temperature)
+
+
 def _parse_ollama_response(raw: str) -> str:
     """Handle both single-JSON and NDJSON Ollama responses."""
     # Try single JSON first (fastest path)

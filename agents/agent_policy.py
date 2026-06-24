@@ -30,7 +30,8 @@ def should_run_refiner(result: AgentResult, complexity: ComplexityLevel) -> bool
 
     Rules:
     - low complexity: skip (base answer is good enough)
-    - medium complexity: always run (improve clarity)
+    - medium complexity: skip (base answer is sufficient; quality
+      preserved through prompt engineering, not extra agents)
     - high complexity: always run (prepare for expert refinement)
 
     Args:
@@ -40,11 +41,11 @@ def should_run_refiner(result: AgentResult, complexity: ComplexityLevel) -> bool
     Returns:
         True if refiner should run, False otherwise.
     """
-    if complexity == "low":
-        logger.debug("Skipping refiner: low complexity query")
+    if complexity in ("low", "medium"):
+        logger.debug("Skipping refiner: complexity=%s", complexity)
         return False
 
-    # medium or high: always refine
+    # high: always refine
     logger.debug("Running refiner: complexity=%s", complexity)
     return True
 

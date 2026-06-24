@@ -135,5 +135,16 @@ async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_cu
 
 @router.post("/chat/stream", summary="Send a query and receive a streaming text response")
 async def chat_stream(request: ChatRequest, current_user: TokenPayload = Depends(get_current_user)):
+    """
+    Streaming endpoint.
+
+    The current implementation generates the full response via the
+    pipeline and then chunks it. True LLM-native streaming is
+    available via ``llm.ollama_client.stream_llm`` but requires
+    each pipeline to yield tokens instead of returning strings.
+    """
     result = await asyncio.to_thread(process_query, request.message)
-    return create_text_streaming_response(result.response)
+    # Prefix the stream with the domain so the UI can show the
+    # active pipeline indicator immediately.
+    domain_prefix = f"DOMAIN:{result.domain}\n"
+    return create_text_streaming_response(domain_prefix + result.response)

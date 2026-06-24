@@ -1,15 +1,26 @@
 import {
   Terminal, GraduationCap,
-  Stethoscope, BookOpen, FileText, User, Cpu
+  Stethoscope, BookOpen, FileText, User, Cpu, Sparkles
 } from "lucide-react";
 import MarkdownRenderer from "./MarkdownRenderer";
 import CodingResponse from "./CodingResponse";
 import MedicalResponse from "./MedicalResponse";
 import AcademicResponse from "./AcademicResponse";
+import useChatStore from "../store/chatStore";
+
+const DOMAIN_META = {
+  education: { emoji: "🧠", label: "Education Pipeline" },
+  coding: { emoji: "💻", label: "Coding Pipeline" },
+  medical: { emoji: "🩺", label: "Medical Pipeline" },
+  general: { emoji: "🌍", label: "General Pipeline" },
+  college: { emoji: "🎓", label: "College Prediction" },
+  pdf: { emoji: "📄", label: "PDF QA" },
+};
 
 export default function MessageBubble({ sender, text, content, domain, data }) {
   const isUser = sender === "user";
   const displayText = text ?? content;
+  const currentDomain = useChatStore((state) => state.currentDomain) || "general";
 
 
   // Render content based on domain & data structure
@@ -18,6 +29,24 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
       return (
         <div className="user-message-bubble">
           {displayText}
+        </div>
+      );
+    }
+
+    // Loading bubble — pipeline-specific indicator
+    if (domain === "loading") {
+      const meta = DOMAIN_META[currentDomain] || DOMAIN_META.general;
+      return (
+        <div className="bot-message-content">
+          <span className="domain-badge loading">
+            <Sparkles size={12} style={{ marginRight: "4px" }} />
+            {meta.emoji} {meta.label}
+          </span>
+          <div className="typing-indicator">
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+          </div>
         </div>
       );
     }
@@ -36,7 +65,7 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
     // Fallback: render as markdown for general, pdf, or raw text responses
     return (
       <div className="bot-message-content">
-        {domain && domain !== "general" && domain !== "user" && (
+        {domain && domain !== "general" && domain !== "user" && domain !== "loading" && (
           <span className={`domain-badge ${domain}`}>
             {domain === "pdf" && <FileText size={12} style={{ marginRight: "4px" }} />}
             {domain === "coding" && <Terminal size={12} style={{ marginRight: "4px" }} />}
