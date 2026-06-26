@@ -257,15 +257,14 @@ def format_college(
     response_str: str,
     extracted_info: dict | None = None
 ) -> CollegeData:
-    """Parse college pipeline output into structured fields."""
-    response = response_str.strip()
+    """
+    LEGACY FALLBACK — only called when college_pipeline returns a plain string
+    (which no longer happens since college_pipeline now returns PipelineResult).
 
-    # Extract all sections using dictionary comprehension
-    sections: dict[str, list[str]] = {
-        key: _extract_college_list(response, pattern, _BULLET_PATTERN)
-        for key, pattern in _COLLEGE_PATTERNS.items()
-    }
-
+    Cannot reconstruct CollegeCard objects without the raw DataFrame rows, so
+    safe / moderate / dream are returned as empty lists. The formatted text
+    response is still forwarded to the client unchanged.
+    """
     info = extracted_info or {}
     return CollegeData(
         rank=info.get("rank"),
@@ -273,9 +272,10 @@ def format_college(
         gender=info.get("gender"),
         branch=info.get("preferred_branch"),
         location=info.get("location"),
-        safe=sections["safe"],
-        moderate=sections["moderate"],
-        dream=sections["dream"],
+        exam="EAMCET 2025",
+        safe=[],
+        moderate=[],
+        dream=[],
     )
 
 

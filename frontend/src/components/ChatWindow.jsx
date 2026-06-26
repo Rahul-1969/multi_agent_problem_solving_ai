@@ -39,9 +39,11 @@ export default function ChatWindow({ messages, isLoading, onSelectPrompt }) {
     }
   ];
 
+  const hasCollegeResponse = messages.some(msg => msg.domain === 'college');
+
   return (
     <div className="chat-scroll-area" ref={scrollRef}>
-      <div className="chat-container-inner">
+      <div className={`chat-container-inner ${hasCollegeResponse ? 'wide' : ''}`}>
         {messages.length === 0 ? (
           <div className="empty-state">
             <div className="welcome-logo">🧠</div>

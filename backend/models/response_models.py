@@ -95,6 +95,92 @@ class CodingData(BaseModel):
     key_points: list[str] | None = None
 
 
+class CollegeCard(BaseModel):
+    """Rich structured object for a single predicted college."""
+
+    model_config = MODEL_CONFIG
+
+    # ── Identity ──────────────────────────────────────────────────────────────
+    college_name: str
+    college_code: str
+    location: str = "Telangana"
+
+    # ── Classification ────────────────────────────────────────────────────────
+    autonomous: bool = False
+    affiliated_to: str = "JNTUH"
+    college_type: str = "Private"          # "Private" | "Government" | "Deemed"
+
+    # ── Accreditation ─────────────────────────────────────────────────────────
+    naac_grade: str = "N/A"
+    nba_accredited: bool = False
+    nirf_rank: int | None = None
+    established: int | None = None
+
+    # ── Branches ──────────────────────────────────────────────────────────────
+    predicted_branches: list[str] = Field(default_factory=list)   # matched by predictor
+    available_branches: list[str] = Field(default_factory=list)   # all college branches
+
+    # ── Cutoff context ────────────────────────────────────────────────────────
+    closing_rank: int | None = None          # last year's closing rank
+    score_above_cutoff: int | None = None    # user_rank - closing_rank (positive = safer)
+
+    # ── Probability ───────────────────────────────────────────────────────────
+    admission_probability: str = "SAFE"      # "SAFE" | "MODERATE" | "DREAM"
+    recommendation_level: str = ""           # "High Chance" | "Good Chance" | "Lower Chance"
+
+    # ── Placements ────────────────────────────────────────────────────────────
+    placement_percentage: float | None = None
+    avg_package_lpa: float | None = None
+    highest_package_lpa: float | None = None
+    median_package_lpa: float | None = None
+    top_recruiters: list[str] = Field(default_factory=list)
+
+    # ── Facilities & Cost ─────────────────────────────────────────────────────
+    hostel_available: bool = False
+    scholarships_available: bool = False
+    tuition_fee_per_year: int | None = None
+    hostel_fee: int | None = None
+    transport_available: bool | None = None
+    campus_area_acres: float | None = None
+    minority_status: bool = False
+    contact_number: str | None = None
+    official_email: str | None = None
+
+    # ── Decision Support (Phase 6) ────────────────────────────────────────────
+    pros: list[str] = Field(default_factory=list)
+    cons: list[str] = Field(default_factory=list)
+    best_for: str | None = None
+    ideal_student_profile: str | None = None
+    career_opportunities: str | None = None
+    campus_highlights: list[str] = Field(default_factory=list)
+    internships_available: str | None = None
+    parent_summary: str | None = None
+
+    # ── Links & Media ─────────────────────────────────────────────────────────
+    official_website: str | None = None
+    google_maps_url: str | None = None
+    college_image_url: str | None = None
+
+    # ── AI explanation & Ranking ──────────────────────────────────────────────
+    reason_for_recommendation: str = ""
+    ranking_score: float | None = None
+    medal_badge: str | None = None
+    is_best_match: bool = False
+
+    # ── Phase 10 Extended Intelligence ────────────────────────────────────────
+    student_match_score: float | None = None
+    roi_score: float | None = None
+    roi_label: str | None = None
+    campus_rating_stars: int | None = None
+    prediction_confidence: str | None = None
+    counselor_summary: dict | None = Field(default_factory=dict)
+    comparison_ready: dict | None = Field(default_factory=dict)
+    ranking_breakdown: dict | None = Field(default_factory=dict)
+    strengths: list[str] = Field(default_factory=list)
+    weaknesses: list[str] = Field(default_factory=list)
+    final_verdict: str | None = None
+
+
 class CollegeData(BaseModel):
     model_config = MODEL_CONFIG
 
@@ -103,9 +189,10 @@ class CollegeData(BaseModel):
     gender: str | None = None
     branch: str | None = None
     location: str | None = None
-    safe: list[str] = Field(default_factory=list)
-    moderate: list[str] = Field(default_factory=list)
-    dream: list[str] = Field(default_factory=list)
+    exam: str = "EAMCET 2025"
+    safe: list[CollegeCard] = Field(default_factory=list)
+    moderate: list[CollegeCard] = Field(default_factory=list)
+    dream: list[CollegeCard] = Field(default_factory=list)
 
 
 class GeneralData(BaseModel):

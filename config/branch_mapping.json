@@ -1,0 +1,11 @@
+{
+  "CSE": ["CSE", "IT", "CSM", "CSD", "AID", "AIML", "CSBS", "CSC"],
+  "AI": ["CSM", "AIML", "AID", "CSD", "AI"],
+  "Data Science": ["CSD", "AID", "CSM", "AI", "IT", "CSE"],
+  "Cyber Security": ["CSC", "CSE", "IT"],
+  "IT": ["IT", "CSE", "CSM"],
+  "ECE": ["ECE", "ECM", "EEE"],
+  "EEE": ["EEE", "ECE"],
+  "Mechanical": ["MEC", "ME", "Automobile", "Production"],
+  "Civil": ["CIV", "Civil", "Construction"]
+}

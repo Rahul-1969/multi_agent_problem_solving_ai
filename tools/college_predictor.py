@@ -46,20 +46,28 @@ def _classify_chance(score: int) -> str:
         return "DREAM"
 
 
-def _merge_branches(df: pd.DataFrame) -> pd.DataFrame:
+def _merge_branches(df: pd.DataFrame, branch_pref: str = "NONE") -> pd.DataFrame:
     """
     Collapse multiple rows for the same college into one row,
-    concatenating all branch codes (e.g. CSE/CSM/CSD).
-    The best (lowest) score and the best (lowest) chance_rank are kept.
+    concatenating all branch codes ordered by mapped priority.
     """
     chance_order = {"SAFE": 0, "MODERATE": 1, "DREAM": 2}
     df = df.copy()
     df["_chance_rank"] = df["chance"].map(chance_order)
 
+    # Get the ordered list of branches for ranking
+    ordered_branches = BRANCH_MAP.get(branch_pref.upper(), [])
+    
+    def sort_branches(x):
+        unique_branches = list(set(x))
+        # Sort by the index in ordered_branches if present, else fallback to alphabetical
+        unique_branches.sort(key=lambda b: ordered_branches.index(b) if b in ordered_branches else 999)
+        return "/".join(unique_branches)
+
     grouped = (
         df.groupby("college_display", sort=False)
         .agg(
-            branch_code  = ("branch_code",  lambda x: "/".join(sorted(set(x)))),
+            branch_code  = ("branch_code",  sort_branches),
             priority     = ("priority",     "min"),
             score        = ("score",        "min"),
             _chance_rank = ("_chance_rank", "min"),
@@ -130,11 +138,13 @@ def predict_colleges(
 
     # ── 6. Display name & branch merge ───────────────────────────────────────
     result["college_display"] = result.apply(_clean_name, axis=1)
-    merged = _merge_branches(result)
-
+    
     # ── 7. Top-50 priority selection ─────────────────────────────────────────
-    top50  = merged[merged["priority"] == 0]
-    others = merged[merged["priority"] == 1]
+    top50_df = result[result["priority"] == 0]
+    others_df = result[result["priority"] == 1]
+    
+    top50 = _merge_branches(top50_df, branch_pref).sort_values("score", ascending=False)
+    others = _merge_branches(others_df, branch_pref).sort_values("score", ascending=False)
 
     if len(top50) >= TOP_RESULTS_TARGET:
         final = top50.head(TOP_RESULTS_TARGET)

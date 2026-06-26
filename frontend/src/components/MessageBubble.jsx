@@ -6,6 +6,7 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import CodingResponse from "./CodingResponse";
 import MedicalResponse from "./MedicalResponse";
 import AcademicResponse from "./AcademicResponse";
+import CollegeResponse from "./CollegeResponse";
 import useChatStore from "../store/chatStore";
 
 const DOMAIN_META = {
@@ -59,7 +60,7 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
     } else if (domain === "education" && data && typeof data === "object") {
       return <AcademicResponse data={data} />;
     } else if (domain === "college" && data) {
-      return renderCollegeData(data);
+      return <CollegeResponse data={data} />;
     }
 
     // Fallback: render as markdown for general, pdf, or raw text responses
@@ -79,73 +80,6 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
     );
   };
 
-  // College prediction rendering
-  const renderCollegeData = (college) => {
-    return (
-      <div className="structured-response college-response">
-        <div className="response-title college">
-          <GraduationCap size={20} />
-          <h1>College Prediction</h1>
-        </div>
-
-        {college.rank && (
-          <div className="college-info-box">
-            <div className="info-item">
-              <span className="info-label">Rank:</span>
-              <span className="info-value">{college.rank}</span>
-            </div>
-            {college.category && (
-              <div className="info-item">
-                <span className="info-label">Category:</span>
-                <span className="info-value">{college.category}</span>
-              </div>
-            )}
-            {college.gender && (
-              <div className="info-item">
-                <span className="info-label">Gender:</span>
-                <span className="info-value">{college.gender}</span>
-              </div>
-            )}
-            {college.branch && (
-              <div className="info-item">
-                <span className="info-label">Branch:</span>
-                <span className="info-value">{college.branch}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {[
-          { title: "Safe Options", key: "safe", color: "#10b981" },
-          { title: "Moderate Options", key: "moderate", color: "#f59e0b" },
-          { title: "Dream Options", key: "dream", color: "#8b5cf6" }
-        ].map((tier) => {
-          const list = college[tier.key] || [];
-          if (list.length === 0) return null;
-
-          return (
-            <div key={tier.key} className="response-section">
-              <h2 style={{ color: tier.color, display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{
-                  display: "inline-block",
-                  width: "12px",
-                  height: "12px",
-                  borderRadius: "50%",
-                  backgroundColor: tier.color,
-                }}></span>
-                {tier.title}
-              </h2>
-              <ul>
-                {list.map((item, idx) => (
-                  <li key={idx}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className={`message-row ${isUser ? "user-row" : "bot-row"}`}>

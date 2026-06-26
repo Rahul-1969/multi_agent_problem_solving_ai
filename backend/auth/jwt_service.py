@@ -15,14 +15,24 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-_ACCESS_SECRET_KEY: str | None = os.getenv("JWT_ACCESS_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
-_REFRESH_SECRET_KEY: str | None = os.getenv("JWT_REFRESH_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+def _access_secret():
+    return os.getenv("JWT_ACCESS_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
 
-# Backward-compatible alias
+def _refresh_secret():
+    return os.getenv("JWT_REFRESH_SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
+
+_ACCESS_SECRET_KEY = _access_secret()
+_REFRESH_SECRET_KEY = _refresh_secret()
 SECRET_KEY = _ACCESS_SECRET_KEY
 
 
 def _ensure_secrets() -> None:
+    global _ACCESS_SECRET_KEY, _REFRESH_SECRET_KEY, SECRET_KEY
+
+    _ACCESS_SECRET_KEY = _access_secret()
+    _REFRESH_SECRET_KEY = _refresh_secret()
+    SECRET_KEY = _ACCESS_SECRET_KEY
+
     if not _ACCESS_SECRET_KEY:
         raise RuntimeError(
             "JWT_ACCESS_SECRET_KEY or JWT_SECRET_KEY environment variable must be configured."
@@ -33,12 +43,17 @@ def _ensure_secrets() -> None:
         )
 
 
+
 def _create_token(data: dict, expires_delta: timedelta) -> str:
     _ensure_secrets()
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
-    key = _ACCESS_SECRET_KEY if to_encode.get("type") == "access" else _REFRESH_SECRET_KEY
+    key = (
+        _ACCESS_SECRET_KEY
+        if to_encode.get("type") == "access"
+        else _REFRESH_SECRET_KEY
+    )
     return jwt.encode(to_encode, key, algorithm=ALGORITHM)
 
 

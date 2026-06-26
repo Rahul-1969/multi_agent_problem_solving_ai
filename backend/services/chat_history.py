@@ -38,8 +38,22 @@ class ChatHistoryManager:
     def _persist(self) -> None:
         try:
             os.makedirs(DATA_DIR, exist_ok=True)
+
             with open(_CHAT_HISTORY_FILE, "w", encoding="utf-8") as fh:
-                json.dump(self._store, fh, ensure_ascii=False, indent=2)
+                json.dump(
+                    self._store,
+                    fh,
+                    ensure_ascii=False,
+                    indent=2,
+                    default=lambda o:
+                        o.model_dump()
+                        if hasattr(o, "model_dump")
+                        else (
+                            o.dict()
+                            if hasattr(o, "dict")
+                            else str(o)
+                        )
+                )
         except OSError:
             pass
 
@@ -111,24 +125,43 @@ class ChatHistoryManager:
                 return True
         return False
 
-    def append_message(self, username: str, chat_id: str, message: dict[str, Any]) -> dict[str, Any] | None:
+    def append_message(
+        self,
+        username: str,
+        chat_id: str,
+        message: dict[str, Any]
+    ) -> dict[str, Any] | None:
+
         with self._lock:
             chats = self._user_chats(username)
             chat = chats.get(chat_id)
+
             if chat is None:
                 return None
+
+            data = message.get("data")
+
+            if hasattr(data, "model_dump"):
+                data = data.model_dump()
+            elif hasattr(data, "dict"):
+                data = data.dict()
+
             entry = {
                 "sender": message.get("sender"),
                 "content": message.get("content"),
                 "domain": message.get("domain"),
-                "data": message.get("data"),
+                "data": data,
                 "created_at": message.get("created_at") or self._now_iso(),
             }
+
             chat["messages"].append(entry)
             chat["updated_at"] = self._now_iso()
+
             if entry["content"]:
                 chat["last_message"] = entry["content"]
+
             self._persist()
+
             return self._copy_chat(chat)
 
 

@@ -17,6 +17,10 @@ SyntaxWarning). All path strings now use os.path or raw strings.
 
 import sys
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from contextlib import asynccontextmanager
 
 from utils.logger import get_logger, setup_logging
@@ -37,6 +41,7 @@ from backend.api.routes.auth      import router as auth_router
 from config import ensure_directories
 from tools.pdf_session_store import DEFAULT_SESSION_ID, pdf_session_store
 from tools.data_loader import load_data
+from tools.metadata_loader import load_college_metadata
 
 setup_logging()
 logger = get_logger("backend")
@@ -58,6 +63,12 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("Could not pre-load dataset")
         raise
+
+    try:
+        meta = load_college_metadata()
+        logger.info("College metadata ready: %d entries", len(meta))
+    except Exception:
+        logger.warning("Could not pre-load college metadata — will load on demand")
 
     yield
 

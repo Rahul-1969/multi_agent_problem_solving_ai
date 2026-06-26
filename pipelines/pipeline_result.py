@@ -20,6 +20,7 @@ from backend.models.response_models import (
     EducationData,
     MedicalData,
     CodingData,
+    CollegeCard,
     CollegeData,
     GeneralData,
     ResponseData,

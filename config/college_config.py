@@ -42,46 +42,16 @@ LOCATION_MAP: Final[dict[str, list[str]]] = {
     "suryapet":     ["SRP"],
 }
 
-BRANCH_MAP: Final[dict[str, list[str]]] = {
-    "CSE": [
-        "CSE",
-        "CS",
-        "CSM",
-        "CSD",
-        "CSO",
-        "CSS",
-        "CSBS",
-        "CSE-AIML",
-        "CSE-DS",
-        "CSE-IOT",
-        "CSE-SEC",
-        "CSE-IS",
-        "CSE-ML",
-        "CSE-AI",
-    ],
-    "INF": ["INF", "IT"],
-    "ECE": ["ECE", "ECA", "ECM"],
-    "EEE": ["EEE"],
-    "MEC": ["MEC", "MECH", "MEP"],
-    "CIV": ["CIV"],
-    "AI": [
-        "AI",
-        "AIML",
-        "AID",
-        "AIDS",
-        "AI-DS",
-        "AI-SEC",
-        "AI-IS",
-        "AI-ML",
-        "AIML-DS",
-        "CS-AI",
-        "CS-AIML",
-    ],
-    "CHE": ["CHE", "CHEM"],
-    "MET": ["MET"],
-    "MIN": ["MIN"],
-    "NONE": [],
-}
+import json
+from pathlib import Path
+
+# Load branch mappings dynamically
+try:
+    _branch_mapping_file = Path(__file__).parent / "branch_mapping.json"
+    with open(_branch_mapping_file, "r", encoding="utf-8") as _f:
+        BRANCH_MAP: Final[dict[str, list[str]]] = json.load(_f)
+except Exception:
+    BRANCH_MAP: Final[dict[str, list[str]]] = {}
 
 __all__ = [
     "TOP_COLLEGES",

@@ -46,16 +46,9 @@ Thumbs.db
 # Patch backups
 kimchi_patches/
 
-echo '
-# WSL Python environment
-.venv-linux/
+# Runtime data
+data/chat_history.json
 
-# Kimchi
-.kimchi/
-
-# Temporary diff files
-*_diff.txt
-
-# Patch backups
-kimchi_patches/
-' >> .gitignore
+# Frontend build
+dist/
+node_modules/
