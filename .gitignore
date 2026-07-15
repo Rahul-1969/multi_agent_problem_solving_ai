@@ -97,3 +97,6 @@ yarn-error.log*
 
 # Docker overrides
 docker-compose.override.yml
+
+# Runtime user database
+data/users.json
