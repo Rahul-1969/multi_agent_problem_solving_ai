@@ -4,7 +4,6 @@ PDF management and Q&A endpoints.
 """
 
 import os
-import re
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException, status
 from backend.auth.auth_dependency import get_current_user
 from backend.auth.token_models import TokenPayload
@@ -16,14 +15,12 @@ from backend.models.pdf_models import (
     PDFAnswerResponse,
 )
 from backend.services.pdf_service import (
-    answer_from_pdf,
     async_answer_from_pdf,
     clear_pdf,
     get_pdf_status,
     load_pdf,
 )
 from config import UPLOAD_DIR
-from tools.pdf_session_manager import pdf_session_manager
 from utils.logger import get_logger
 
 router = APIRouter()

@@ -30,6 +30,33 @@ eliminating the need for this formatter entirely.
 Performance
 -----------
 All regex patterns are precompiled to avoid repeated compilation on each call.
+
+Migration Checklist
+-------------------
+See formatter_dispatcher._LEGACY_PIPELINES for tracked pipelines.
+
+1. medical_pipeline.py  → Return PipelineResult(response=..., data=MedicalData(...))
+   - Already returns PipelineResult but with MedicalData in data field
+   - Need to ensure data is properly populated for all paths
+
+2. general_pipeline.py  → Return PipelineResult(response=..., data=GeneralData(...))
+   - Already returns PipelineResult with GeneralData
+   - Need to ensure structured data matches formatter expectations
+
+3. pdf_pipeline.py      → Return PipelineResult(response=..., data=PDFData(...))
+   - Currently uses GeneralData as placeholder
+   - Need dedicated PDFData model in response_models.py
+
+4. education_pipeline.py → Already returns PipelineResult with EducationData ✓
+5. coding_pipeline.py    → Already returns PipelineResult with CodingData ✓
+6. college_pipeline.py   → Already returns PipelineResult with CollegeData ✓
+7. career_pipeline.py    → Already returns PipelineResult with CareerRoadmapData ✓
+8. scholarship_pipeline.py → Already returns PipelineResult with ScholarshipData ✓
+
+When all pipelines migrate:
+- Delete this file (response_formatter.py)
+- Delete formatters from formatter_dispatcher.py
+- Remove legacy fallback in dispatch_formatter()
 """
 
 import re

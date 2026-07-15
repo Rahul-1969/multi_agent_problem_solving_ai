@@ -18,6 +18,7 @@ from utils.logger import get_logger
 import re
 from difflib import get_close_matches
 from typing import Final
+from dataclasses import dataclass
 
 from constants import DIVIDER
 from llm.ollama_client       import call_llm
@@ -34,6 +35,15 @@ logger = get_logger(__name__)
 # Missing pattern that caused runtime NameError (see audit P0-4)
 _CODE_PATTERN = re.compile(r'```(\w+)?\n(.*?)```', re.DOTALL)
 
+@dataclass
+class ParsedCodeOutput:
+    formatted_string: str
+    code_language: str
+    code_content: str
+    explanation: str | None
+    complexity: str | None
+    tip: str | None
+
 _SYSTEM = (
     "You are a senior software engineer.\n"
     "Always provide complete working code.\n"
@@ -44,7 +54,6 @@ _SYSTEM = (
     "Keep explanations concise.\n"
     "No verbose introductions.\n"
 )
-# Section labels for shared parser (order matters for leading-text capture)
 _SECTION_LABELS: Final[dict[str, list[str]]] = {
     "code": [
         "CODE",
@@ -114,7 +123,7 @@ def _build_prompt(query: str, level: str) -> str:
     return prompt
 
 
-def _clean_code_output(raw: str, lang: str) -> str:
+def _clean_code_output(raw: str, lang: str) -> ParsedCodeOutput:
     """
     Normalise LLM code output into consistent ```lang\ncode\n``` format.
     Strips bold, headers, and divider lines from explanation section.
@@ -145,9 +154,18 @@ def _clean_code_output(raw: str, lang: str) -> str:
             parts.append(clean_text(tip, remove_filler=True))
 
         if parts:
-            return f"```{detected_lang}\n{code}\n```\n\n{'\n\n'.join(parts)}"
-        return f"```{detected_lang}\n{code}\n```"
-
+            formatted = f"```{detected_lang}\n{code}\n```\n\n{'\n\n'.join(parts)}"
+        else:
+            formatted = f"```{detected_lang}\n{code}\n```"
+            
+        return ParsedCodeOutput(
+            formatted_string=formatted,
+            code_language=detected_lang,
+            code_content=code,
+            explanation=explanation,
+            complexity=complexity,
+            tip=tip,
+        )
     # No fence — use shared parser to extract sections (capture leading text as code)
     sections = parse_sections(raw, _SECTION_LABELS, capture_leading_text=True)
     code = sections.get("code", "").strip()
@@ -165,12 +183,29 @@ def _clean_code_output(raw: str, lang: str) -> str:
 
     if code:
         if parts:
-            return f"```{lang}\n{code}\n```\n\n{'\n\n'.join(parts)}"
-        return f"```{lang}\n{code}\n```"
+            formatted = f"```{lang}\n{code}\n```\n\n{'\n\n'.join(parts)}"
+        else:
+            formatted = f"```{lang}\n{code}\n```"
+            
+        return ParsedCodeOutput(
+            formatted_string=formatted,
+            code_language=lang,
+            code_content=code,
+            explanation=explanation,
+            complexity=complexity,
+            tip=tip,
+        )
 
     # Fallback: treat entire raw as code block
-    return f"```{lang}\n{raw}\n```"
-
+    formatted = f"```{lang}\n{raw}\n```"
+    return ParsedCodeOutput(
+        formatted_string=formatted,
+        code_language=lang,
+        code_content=raw,
+        explanation=None,
+        complexity=None,
+        tip=None,
+    )
 
 def validate_coding_query(query: str) -> str | None:
     """
@@ -227,7 +262,7 @@ def validate_coding_query(query: str) -> str | None:
     )
 
 
-def coding_pipeline(query: str) -> PipelineResult:
+def coding_pipeline(query: str, **kwargs) -> PipelineResult:
     """
     Entry point for coding queries.
     Returns structured coding data alongside formatted display string.
@@ -267,36 +302,18 @@ def coding_pipeline(query: str) -> PipelineResult:
             data=CodingData(language=lang, title=query)
         )
 
-    cleaned = _clean_code_output(raw, lang)
-    formatted_response = f"💻  CODING ASSISTANT\n{DIVIDER}\n\n{cleaned}\n\n{DIVIDER}"
-
-    # Parse formatted response into CodingData model
-    # Extract code block from the cleaned output
-    code_match = _CODE_PATTERN.search(cleaned)
-    if code_match:
-        code_language = code_match.group(1) or lang
-        code_content = code_match.group(2).strip()
-        after_code = cleaned[code_match.end():].strip()
-        parsed_sections = parse_sections(after_code, CODING_LABELS)
-        explanation = parsed_sections.get("explanation", "").strip() or None
-        complexity = parsed_sections.get("complexity", "").strip() or None
-        tip = parsed_sections.get("tip", "").strip() or None
-    else:
-        code_language = lang
-        code_content = None
-        explanation = cleaned.strip() or None
-        complexity = None
-        tip = None
+    parsed = _clean_code_output(raw, lang)
+    formatted_response = f"💻  CODING ASSISTANT\n{DIVIDER}\n\n{parsed.formatted_string}\n\n{DIVIDER}"
 
     coding_data = CodingData(
-        language=code_language,
-        code=code_content,
-        explanation=explanation,
-        complexity=complexity,
-        tip=tip,
+        language=parsed.code_language,
+        code=parsed.code_content,
+        explanation=parsed.explanation,
+        complexity=parsed.complexity,
+        tip=parsed.tip,
         title=query,
-        time_complexity=complexity,
-        key_points=[tip] if tip else None,
+        time_complexity=parsed.complexity,
+        key_points=[parsed.tip] if parsed.tip else None,
     )
 
     return PipelineResult(response=formatted_response, data=coding_data)

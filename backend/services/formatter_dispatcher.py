@@ -11,7 +11,6 @@ from collections.abc import Callable
 from typing import Any, Final, TypeAlias
 
 from agents.extractor_agent import extract_student_info
-from backend.models.response_models import ResponseData
 from constants.domains import (
     COLLEGE_DOMAIN,
     CODING_DOMAIN,
@@ -29,6 +28,14 @@ from utils.response_formatter import (
 )
 
 logger = get_logger(__name__)
+
+# Pipelines that still return plain strings instead of PipelineResult with structured data
+# These will be migrated to structured PipelineResult in future work.
+_LEGACY_PIPELINES: Final[set[str]] = {
+    MEDICAL_DOMAIN,
+    GENERAL_DOMAIN,
+    "pdf",  # pdf domain not in constants.domains
+}
 
 FormatterFunction: TypeAlias = Callable[[str, str], dict[str, Any]]
 FormatterMap: TypeAlias = dict[str, FormatterFunction]
@@ -76,6 +83,29 @@ def dispatch_formatter(
                 type(pipeline_output.data).__name__,
             )
             return pipeline_output.data.model_dump()
+        
+        if domain in _LEGACY_PIPELINES:
+            logger.warning(
+                "LEGACY: domain=%s still returns str, not PipelineResult. Migrate soon.",
+                domain,
+            )
+        else:
+            logger.warning("Legacy formatter used (PipelineResult had no data) | domain=%s", domain)
         return _format(domain, pipeline_output.response, query)
 
+    if domain in _LEGACY_PIPELINES:
+        logger.warning(
+            "LEGACY: domain=%s still returns str, not PipelineResult. Migrate soon.",
+            domain,
+        )
+    else:
+        logger.warning("Legacy formatter used (String response) | domain=%s", domain)
     return _format(domain, pipeline_output, query)
+
+
+def get_legacy_pipeline_list() -> set[str]:
+    """
+    Returns the set of pipeline domains that still use the legacy string path.
+    Usable by admin endpoints to surface migration status.
+    """
+    return _LEGACY_PIPELINES

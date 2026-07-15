@@ -1,281 +1,286 @@
 import React, { useState } from 'react';
-import { 
-  GraduationCap, 
-  MapPin, 
-  Building2, 
-  Award, 
-  Briefcase, 
-  Globe, 
-  Map, 
-  ChevronDown, 
-  ChevronRight, 
-  Star,
-  CheckCircle2,
-  TrendingUp,
-  Scale,
-  Sparkles,
-  Users
-} from 'lucide-react';
+import { MapPin, Globe, Copy, Check, Bookmark, BookmarkCheck } from 'lucide-react';
 import './CollegeResponse.css';
 
-const formatLPA = (val) => val ? `₹${val} LPA` : "N/A";
-const formatPct = (val) => val ? `${val}%` : "N/A";
+const formatLPA = (val) => val ? `₹${val} LPA` : 'N/A';
 
-// Progress bar component for Ranks
-const RankProgressBar = ({ userRank, closingRank }) => {
-  // If userRank is 12000 and closing is 16000, user is 4000 safer.
-  // We'll calculate a percentage to fill.
-  // 100% full means user is very safe. 
-  // Let's make the scale so that if userRank == closingRank, it's 50%.
-  // If userRank is 0, it's 100%. If userRank > closingRank (not safe), < 50%.
-  if (!userRank || !closingRank) return <span className="fallback-value">N/A</span>;
-  
-  let pct = 50;
-  if (userRank < closingRank) {
-    pct = 50 + ((closingRank - userRank) / closingRank) * 50;
-  } else {
-    pct = (closingRank / userRank) * 50;
-  }
-  
-  // clamp between 5 and 100
-  pct = Math.max(5, Math.min(100, pct));
-  
+const TIER_CONFIG = {
+  SAFE:     { dot: '#10b981', label: 'SAFE',     stars: '★★★★★ Highly Recommended' },
+  MODERATE: { dot: '#f59e0b', label: 'MODERATE', stars: '★★★★☆ Good Match' },
+  DREAM:    { dot: '#ef4444', label: 'DREAM',    stars: '★★★☆☆ Reach School' },
+};
+
+// Deterministic gradient from college code
+const codeToGradient = (code = '') => {
+  let h = 0;
+  for (let i = 0; i < code.length; i++) h = code.charCodeAt(i) + ((h << 5) - h);
+  const hue = Math.abs(h) % 360;
+  return `linear-gradient(135deg, hsl(${hue},60%,30%), hsl(${(hue + 40) % 360},50%,20%))`;
+};
+
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
   return (
-    <div className="progress-bar-container">
-      <div className="progress-bar-labels">
-        <span className="user-rank">You: {userRank.toLocaleString()}</span>
-        <span className="closing-rank">Cutoff: {closingRank.toLocaleString()}</span>
-      </div>
-      <div className="progress-track">
-        <div className="progress-fill rank-fill" style={{ width: `${pct}%` }}></div>
-      </div>
-    </div>
+    <button className="copy-btn" onClick={handleCopy} title="Copy college code">
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
   );
 };
 
-// Progress bar component for Percentages
-const PctProgressBar = ({ value }) => {
-  if (!value) return <span className="fallback-value">N/A</span>;
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-  const pct = Math.max(0, Math.min(100, numValue));
-  
-  return (
-    <div className="progress-bar-container pct-container">
-      <div className="progress-track">
-        <div className="progress-fill pct-fill" style={{ width: `${pct}%` }}></div>
-      </div>
-      <span className="pct-label">{pct}%</span>
-    </div>
-  );
-};
+import { useChatStore } from '../store';
+import apiService from '../services/apiService';
+import useToastStore from '../store/toastStore';
 
-const CollegeCard = ({ card, tier, isBestMatch, userRank }) => {
+const CollegeCard = ({ card, tier, index }) => {
   const [imgError, setImgError] = useState(false);
-  
-  if (typeof card === 'string') {
-    // Legacy string fallback
-    return <div className="legacy-card">{card}</div>;
-  }
+  const selectedComparison = useChatStore((state) => state.selectedComparison);
+  const addComparison = useChatStore((state) => state.addComparison);
+  const removeComparison = useChatStore((state) => state.removeComparison);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { success, error } = useToastStore();
 
-  // Tier colors
-  const tierColors = {
-    SAFE: { bg: '#10b98120', text: '#10b981', label: '🟢 SAFE' },
-    MODERATE: { bg: '#f59e0b20', text: '#f59e0b', label: '🟡 MODERATE' },
-    DREAM: { bg: '#ef444420', text: '#ef4444', label: '🔴 DREAM' }
-  };
-  
-  const tColor = tierColors[tier] || tierColors.SAFE;
-  
-  const getMatchScore = () => {
-    if (tier === 'SAFE') return { stars: 5, text: '★★★★★ Highly Recommended', pct: 92 };
-    if (tier === 'MODERATE') return { stars: 4, text: '★★★★☆ Good Match', pct: 75 };
-    return { stars: 3, text: '★★★☆☆ Reach School', pct: 45 };
-  };
-  const match = getMatchScore();
+  if (typeof card === 'string') return <div className="legacy-card">{card}</div>;
 
-  const getInitials = (name) => {
-    if (!name) return "UN";
-    return name.split(' ').map(n => n[0]).join('').substring(0, 3).toUpperCase();
+  const isSelected = selectedComparison.some(c => c.college_code === card.college_code);
+  const handleCompareToggle = () => {
+    if (isSelected) {
+      removeComparison(card.college_code);
+    } else {
+      addComparison(card);
+    }
   };
-  
-  const stringToColor = (str) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    return `hsl(${hash % 360}, 70%, 50%)`;
+
+  const cfg = TIER_CONFIG[tier] || TIER_CONFIG.SAFE;
+  const branches = card.predicted_branches?.length
+    ? card.predicted_branches
+    : card.available_branches?.slice(0, 6) || [];
+
+  // Show at most N recruiters before "+X more"
+  const MAX_RECRUITERS = 4;
+  const recruiters = card.top_recruiters || [];
+
+  const handleSaveCollege = async () => {
+    if (isSaving || isSaved) return;
+    setIsSaving(true);
+    try {
+      await apiService.post('/api/v1/profile/colleges', {
+        college_code: card.college_code,
+        branch: branches[0] || 'CSE',
+      });
+      setIsSaved(true);
+      success('College saved successfully');
+    } catch (err) {
+      console.error(err);
+      error('Failed to save college');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="college-card">
-      {(card.is_best_match || card.medal_badge) && (
-        <div className="best-match-ribbon">
-          <Star size={14} fill="currentColor" /> {card.medal_badge || "BEST MATCH"}
+    <div className={`cc-card cc-${tier.toLowerCase()}`}>
+      {/* ── Numbered Image Block ── */}
+      <div className="cc-image-block">
+        <div className="cc-number">{index + 1}</div>
+        {card.college_image_url && !imgError ? (
+          <img
+            src={card.college_image_url}
+            alt={card.college_name}
+            className="cc-image"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="cc-avatar" style={{ background: codeToGradient(card.college_code) }}>
+            {(card.college_code || card.college_name || '??').substring(0, 4)}
+          </div>
+        )}
+      </div>
+
+      {/* ── Main Content ── */}
+      <div className="cc-body">
+        {/* Top row: Name + Badges */}
+        <div className="cc-top">
+          <div className="cc-name-block">
+            <div className="cc-stars-tier">
+              <span className="cc-stars">{cfg.stars}</span>
+              <span className="cc-tier-dot" style={{ background: cfg.dot }} />
+              <span className="cc-tier-text" style={{ color: cfg.dot }}>{cfg.label}</span>
+            </div>
+            <h3 className="cc-name">{card.college_name || 'Unknown College'}</h3>
+            <div className="cc-location">
+              <MapPin size={12} />
+              <span>{card.location || 'Telangana'}</span>
+            </div>
+            
+            <div className="cc-compare-toggle">
+              <label>
+                <input 
+                  type="checkbox" 
+                  checked={isSelected} 
+                  onChange={handleCompareToggle} 
+                  disabled={!isSelected && selectedComparison.length >= 3}
+                />
+                <span className="cc-compare-label">Compare</span>
+              </label>
+            </div>
+            
+            <button 
+              className="cc-save-btn" 
+              onClick={handleSaveCollege} 
+              disabled={isSaving || isSaved}
+              style={{
+                marginLeft: '12px', background: 'none', border: '1px solid #d1d5db',
+                padding: '4px 8px', borderRadius: '4px', cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                fontSize: '0.8rem', color: isSaved ? '#10b981' : '#4b5563',
+                fontWeight: 500
+              }}
+            >
+              {isSaved ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+              {isSaved ? 'Saved' : (isSaving ? 'Saving...' : 'Save')}
+            </button>
+          </div>
+          <div className="cc-badges">
+            {card.autonomous && <span className="cc-badge autonomous">AUTONOMOUS</span>}
+            {card.affiliated_to && (
+              <span className="cc-badge affiliated">AFFILIATED TO {card.affiliated_to}</span>
+            )}
+          </div>
         </div>
-      )}
-      
-      <div className="card-header">
-        <div className="card-image-container">
-          {card.college_image_url && !imgError ? (
-            <img 
-              src={card.college_image_url} 
-              alt={card.college_name} 
-              className="college-image" 
-              onError={() => setImgError(true)}
-            />
+
+        {/* Quick facts row */}
+        <div className="cc-facts-row">
+          <div className="cc-fact">
+            <span className="cc-fact-label">NAAC GRADE</span>
+            <span className="cc-fact-val">{card.naac_grade || 'N/A'}</span>
+          </div>
+          <div className="cc-fact">
+            <span className="cc-fact-label">ESTD.</span>
+            <span className="cc-fact-val">{card.established || 'N/A'}</span>
+          </div>
+          <div className="cc-fact">
+            <span className="cc-fact-label">TYPE</span>
+            <span className="cc-fact-val">{card.college_type || 'Private'}</span>
+          </div>
+          {card.nirf_rank && (
+            <div className="cc-fact">
+              <span className="cc-fact-label">NIRF</span>
+              <span className="cc-fact-val">#{card.nirf_rank}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Branches row */}
+        <div className="cc-branches-row">
+          <span className="cc-branches-label">Popular Branches</span>
+          <div className="cc-branches">
+            {branches.slice(0, 7).map((b, i) => (
+              <span key={i} className="cc-branch-chip">{b}</span>
+            ))}
+            {branches.length > 7 && (
+              <span className="cc-branch-chip more">+{branches.length - 7} more</span>
+            )}
+          </div>
+        </div>
+
+        {/* Footer: website + college code */}
+        <div className="cc-footer">
+          {card.official_website ? (
+            <a
+              href={card.official_website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cc-website"
+            >
+              <Globe size={12} />
+              Official Website: {card.official_website}
+            </a>
           ) : (
-            <div className="avatar-fallback" style={{ background: `linear-gradient(135deg, ${stringToColor(card.college_code || card.college_name)}, #2a2a35)` }}>
-              {getInitials(card.college_code || card.college_name)}
-            </div>
+            <span className="cc-website-na">No official website listed</span>
           )}
-        </div>
-        
-        <div className="card-title-area">
-          <div className="card-badges-top">
-            <span className="match-score">{match.text}</span>
-            <span className="tier-badge" style={{ backgroundColor: tColor.bg, color: tColor.text }}>
-              {tColor.label}
-            </span>
-          </div>
-          <h3 className="college-name">{card.college_name || "Unknown College"} {card.college_code && `(${card.college_code})`}</h3>
-          <div className="location-row">
-            <MapPin size={14} /> {card.location || "N/A"}
-            {card.autonomous && <span className="pill-badge auto">Autonomous</span>}
-            {card.affiliated_to && <span className="pill-badge affil">Affiliated: {card.affiliated_to}</span>}
+          <div className="cc-code-block">
+            <span className="cc-code-label">College Code:</span>
+            <span className="cc-code-val">{card.college_code || 'N/A'}</span>
+            {card.college_code && <CopyButton text={card.college_code} />}
           </div>
         </div>
       </div>
-      
-      {/* Main Dashboard Grid */}
-      <div className="card-dashboard-grid">
-        
-        {/* Column 1: Academics & Admission */}
-        <div className="grid-col">
-          <div className="compact-facts">
-            <div className="fact-inline"><span className="label">Established</span> <span className="val">{card.established || "N/A"}</span></div>
-            <div className="fact-inline"><span className="label">NAAC</span> <span className="val">{card.naac_grade || "N/A"}</span></div>
-            <div className="fact-inline"><span className="label">NIRF</span> <span className="val">{card.nirf_rank || "N/A"}</span></div>
-            <div className="fact-inline"><span className="label">NBA</span> <span className="val">{card.nba_accredited ? "Yes" : "No"}</span></div>
-          </div>
-          
-          <div className="admission-compact">
-            <div className="fact-inline mt-1">
-              <span className="label">Match</span> 
-              <span className="val highlight-val">{match.pct}%</span>
+
+      {/* ── Stats Panel (right) ── */}
+      <div className="cc-stats">
+        <div className="cc-stat placement">
+          <div className="cc-stat-icon">📈</div>
+          <div>
+            <div className="cc-stat-label">Last Year Placement</div>
+            <div className="cc-stat-val placement-pct">
+              {card.placement_percentage ? `${card.placement_percentage}%` : 'N/A'}
             </div>
-            <RankProgressBar userRank={userRank} closingRank={card.closing_rank} />
-            <div className="cutoff-text">Cutoff: {card.closing_rank?.toLocaleString() || 'N/A'}</div>
+          </div>
+        </div>
+        <div className="cc-stat avgpkg">
+          <div className="cc-stat-icon">₹</div>
+          <div>
+            <div className="cc-stat-label">Average Package</div>
+            <div className="cc-stat-val avg">{formatLPA(card.avg_package_lpa)}</div>
+          </div>
+        </div>
+        <div className="cc-stat highpkg">
+          <div className="cc-stat-icon">🏆</div>
+          <div>
+            <div className="cc-stat-label">Highest Package</div>
+            <div className="cc-stat-val high">{formatLPA(card.highest_package_lpa)}</div>
+          </div>
+        </div>
+        <div className="cc-stat medpkg">
+          <div className="cc-stat-icon">⏱</div>
+          <div>
+            <div className="cc-stat-label">Median Package</div>
+            <div className="cc-stat-val med">{formatLPA(card.median_package_lpa)}</div>
           </div>
         </div>
 
-        {/* Column 2: Placements & Recruiters */}
-        <div className="grid-col">
-          <div className="compact-facts">
-            <div className="fact-inline">
-              <span className="label">Placement</span> 
-              <span className="val bar-wrapper"><PctProgressBar value={card.placement_percentage} /></span>
-            </div>
-            <div className="fact-inline"><span className="label">Avg Pkg</span> <span className="val highlight-val">{formatLPA(card.avg_package_lpa)}</span></div>
-            <div className="fact-inline"><span className="label">Highest</span> <span className="val">{formatLPA(card.highest_package_lpa)}</span></div>
-            <div className="fact-inline mt-1"><span className="label">Top Recruiters</span></div>
-          </div>
-          <div className="chips-container tight">
-            {card.top_recruiters && card.top_recruiters.length > 0 ? (
-              card.top_recruiters.slice(0, 4).map((r, i) => <span key={i} className="chip outline">{r}</span>)
-            ) : (
-              <span className="fallback-value">N/A</span>
+        {/* Recruiters */}
+        {recruiters.length > 0 && (
+          <div className="cc-recruiters">
+            {recruiters.slice(0, MAX_RECRUITERS).map((r, i) => (
+              <span key={i} className="cc-recruiter-chip">{r}</span>
+            ))}
+            {recruiters.length > MAX_RECRUITERS && (
+              <span className="cc-recruiter-chip more">+{recruiters.length - MAX_RECRUITERS}</span>
             )}
           </div>
-        </div>
-
-        {/* Column 3: Branches & Facilities */}
-        <div className="grid-col">
-          <div className="compact-facts">
-            <div className="fact-inline"><span className="label">Tuition Fee</span> <span className="val">{card.tuition_fee_per_year ? `₹${card.tuition_fee_per_year.toLocaleString()}/yr` : "N/A"}</span></div>
-            <div className="fact-inline"><span className="label">Type</span> <span className="val">{card.college_type || "Private"}</span></div>
-            <div className="fact-inline"><span className="label">Hostel</span> <span className="val">{card.hostel_available ? "Yes" : "No"}</span></div>
-            <div className="fact-inline mt-1"><span className="label">Predicted Branches</span></div>
-          </div>
-          <div className="chips-container tight">
-            {card.predicted_branches && card.predicted_branches.length > 0 ? (
-              card.predicted_branches.map((b, i) => <span key={i} className="chip primary">{b}</span>)
-            ) : (
-              <span className="fallback-value">No specific branches predicted</span>
-            )}
-          </div>
-        </div>
-
+        )}
       </div>
-
-      {/* Action Footer (AI + Buttons) */}
-      <div className="card-footer-compact">
-        <div className="ai-rec-text" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '8px' }}>
-          {card.reason_for_recommendation && (
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-              <Sparkles size={12} className="text-accent flex-shrink-0" style={{ marginTop: '2px' }} />
-              <span className="ai-text" title={card.reason_for_recommendation}>{card.reason_for_recommendation}</span>
-            </div>
-          )}
-          {card.parent_summary && (
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-              <Users size={12} className="text-accent flex-shrink-0" style={{ marginTop: '2px' }} />
-              <span className="ai-text" style={{ fontStyle: 'italic', color: 'var(--text-primary)' }} title={card.parent_summary}>
-                <strong>Parent Summary:</strong> {card.parent_summary}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="action-links-compact">
-          {card.official_website && (
-            <a href={card.official_website} target="_blank" rel="noopener noreferrer" className="btn-action primary compact">
-              <Globe size={12} /> <span className="btn-label">Site</span>
-            </a>
-          )}
-          {card.google_maps_url && (
-            <a href={card.google_maps_url} target="_blank" rel="noopener noreferrer" className="btn-action secondary compact">
-              <Map size={12} /> <span className="btn-label">Map</span>
-            </a>
-          )}
-          <button className="btn-action outline compact compare-btn">
-            <Scale size={12} /> <span className="btn-label">Compare</span>
-          </button>
-        </div>
-      </div>
-
     </div>
   );
 };
 
-const CollegeTierSection = ({ title, cards, tier, icon, color, userRank, isOpenDefault = false }) => {
-  const [isOpen, setIsOpen] = useState(isOpenDefault);
-
-  if (!cards || cards.length === 0) return null;
-
+const TierSection = ({ title, icon, color, cards, tier, isOpen: defaultOpen }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  if (!cards?.length) return null;
   return (
-    <div className="tier-section">
-      <button 
-        className="tier-header" 
-        onClick={() => setIsOpen(!isOpen)}
-        style={{ '--tier-color': color }}
+    <div className="cc-tier-section">
+      <button
+        className="cc-tier-header"
+        style={{ '--tier-c': color }}
+        onClick={() => setOpen(o => !o)}
       >
-        <div className="tier-title-left">
-          <span className="tier-icon">{icon}</span>
-          <h2>{title} ({cards.length})</h2>
-        </div>
-        <div className="tier-toggle">
-          {isOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-        </div>
+        <span className="cc-tier-icon">{icon}</span>
+        <span className="cc-tier-title">{title}</span>
+        <span className="cc-tier-count">{cards.length} colleges</span>
+        <span className="cc-tier-chevron">{open ? '▲' : '▼'}</span>
       </button>
-
-      {isOpen && (
-        <div className="tier-cards-container">
-          {cards.map((card, idx) => (
-            <CollegeCard 
-              key={idx} 
-              card={card} 
-              tier={tier} 
-              isBestMatch={tier === 'SAFE' && idx === 0} 
-              userRank={userRank}
-            />
+      {open && (
+        <div className="cc-tier-body">
+          {cards.map((card, i) => (
+            <CollegeCard key={i} card={card} tier={tier} index={i} />
           ))}
         </div>
       )}
@@ -285,59 +290,33 @@ const CollegeTierSection = ({ title, cards, tier, icon, color, userRank, isOpenD
 
 export default function CollegeResponse({ data }) {
   if (!data) return null;
-
-  const userRank = data.rank;
-
   return (
-    <div className="structured-response college-response-v2">
-      <div className="response-title college-hero">
-        <GraduationCap size={24} className="hero-icon" />
-        <div className="hero-text">
-          <h1>College Predictor Results</h1>
-          <p>Based on your EAMCET 2025 profile</p>
+    <div className="cc-root">
+      {/* Header */}
+      <div className="cc-header">
+        <div className="cc-header-title">
+          Predict college for rank {data.rank?.toLocaleString()}, category {data.category}
         </div>
+        <div className="cc-header-sub">Here are the best college predictions for your rank.</div>
       </div>
 
-      <div className="student-profile-bar">
-        <div className="profile-item"><span>Rank:</span> <strong>{userRank?.toLocaleString() || "N/A"}</strong></div>
-        <div className="profile-item"><span>Category:</span> <strong>{data.category || "N/A"}</strong></div>
-        <div className="profile-item"><span>Gender:</span> <strong>{data.gender || "N/A"}</strong></div>
-        <div className="profile-item"><span>Branch:</span> <strong>{data.branch || "Any"}</strong></div>
-        <div className="profile-item"><span>Location:</span> <strong>{data.location || "Any"}</strong></div>
+      {/* Profile strip */}
+      <div className="cc-profile-strip">
+        <div className="cc-profile-pill">🏅 Rank: {data.rank?.toLocaleString() || 'N/A'}</div>
+        <div className="cc-profile-pill">👤 Category: {data.category || 'N/A'} ({data.gender || 'N/A'})</div>
+        <div className="cc-profile-pill">🎓 Exam: {data.exam || 'EAMCET 2025'}</div>
+        <div className="cc-profile-pill">📈 Based on 2024 cutoff trends</div>
       </div>
 
-      <div className="tiers-container">
-        <CollegeTierSection 
-          title="Safe Choices" 
-          cards={data.safe} 
-          tier="SAFE" 
-          icon="🟢" 
-          color="#10b981" 
-          userRank={userRank}
-          isOpenDefault={true} 
-        />
-        <CollegeTierSection 
-          title="Moderate Choices" 
-          cards={data.moderate} 
-          tier="MODERATE" 
-          icon="🟡" 
-          color="#f59e0b"
-          userRank={userRank} 
-          isOpenDefault={false} 
-        />
-        <CollegeTierSection 
-          title="Dream Choices" 
-          cards={data.dream} 
-          tier="DREAM" 
-          icon="🔴" 
-          color="#ef4444" 
-          userRank={userRank}
-          isOpenDefault={false} 
-        />
+      {/* Tiers */}
+      <div className="cc-tiers">
+        <TierSection title="Safe Choices"     icon="🟢" color="#10b981" cards={data.safe}     tier="SAFE"     isOpen={true}  />
+        <TierSection title="Moderate Choices" icon="🟡" color="#f59e0b" cards={data.moderate} tier="MODERATE" isOpen={false} />
+        <TierSection title="Dream Choices"    icon="🔴" color="#ef4444" cards={data.dream}    tier="DREAM"    isOpen={false} />
       </div>
-      
-      <div className="disclaimer-footer">
-        <p>ℹ️ Based on previous year EAMCET cutoffs. Actual allotment may vary.</p>
+
+      <div className="cc-disclaimer">
+        ℹ️ Cutoff ranks may vary slightly each year. Please verify with official counselling portal.
       </div>
     </div>
   );

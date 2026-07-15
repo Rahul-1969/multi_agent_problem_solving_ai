@@ -1,0 +1,13 @@
+Create a short title (maximum 6 words, no quotes, no end punctuation).
+
+Style rules:
+  College prediction → "College Prediction – Rank {N}"
+  Education topic    → topic only, e.g. "DBMS Normalization"
+  Coding             → language + topic, e.g. "Python Merge Sort"
+  Medical            → "Medical: {main symptom}"
+  News/live          → topic + "Update", e.g. "AI Industry Update"
+  Career             → "Career Guidance" or specific topic
+  Scholarship        → "Scholarship Guidance"
+
+User message: {message}
+Return only the title. Nothing else.

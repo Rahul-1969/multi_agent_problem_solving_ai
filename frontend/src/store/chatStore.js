@@ -9,6 +9,25 @@ const useChatStore = create((set, get) => ({
   activeChat: null,
   isLoading: false,
   currentDomain: 'general',
+  selectedComparison: [],
+
+  addComparison(college) {
+    set((state) => {
+      if (state.selectedComparison.length >= 3) return state
+      if (state.selectedComparison.find(c => c.college_code === college.college_code)) return state
+      return { selectedComparison: [...state.selectedComparison, college] }
+    })
+  },
+
+  removeComparison(collegeCode) {
+    set((state) => ({
+      selectedComparison: state.selectedComparison.filter(c => c.college_code !== collegeCode)
+    }))
+  },
+
+  clearComparison() {
+    set({ selectedComparison: [] })
+  },
 
   setChats(chats) {
     set({ chats })
@@ -188,14 +207,19 @@ const useChatStore = create((set, get) => ({
               ? backendMessages
               : [...filtered, botMessage]
 
+            const newTitle = result.chat_title
+
+            const updatedActiveChat = {
+              ...state.activeChat,
+              messages: nextMessages,
+            }
+            if (newTitle) updatedActiveChat.title = newTitle
+
             return {
-              activeChat: {
-                ...state.activeChat,
-                messages: nextMessages,
-              },
+              activeChat: updatedActiveChat,
               chats: state.chats.map((chat) =>
                 chat.id === currentChatId
-                  ? { ...chat, updated_at: new Date().toISOString() }
+                  ? { ...chat, updated_at: new Date().toISOString(), title: newTitle || chat.title }
                   : chat,
               ),
             }

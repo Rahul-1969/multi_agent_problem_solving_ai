@@ -15,6 +15,10 @@ from constants.domains import (
     CODING_DOMAIN,
     EDUCATION_DOMAIN,
     GENERAL_DOMAIN,
+    LIVE_DOMAIN,
+    CAREER_DOMAIN,
+    SCHOLARSHIP_DOMAIN,
+    RESUME_DOMAIN,
 )
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
@@ -32,6 +36,10 @@ DomainType = Literal[
     CODING_DOMAIN,
     EDUCATION_DOMAIN,
     GENERAL_DOMAIN,
+    LIVE_DOMAIN,
+    CAREER_DOMAIN,
+    SCHOLARSHIP_DOMAIN,
+    RESUME_DOMAIN,
 ]
 
 # Domain-specific models
@@ -201,6 +209,126 @@ class GeneralData(BaseModel):
     answer: str
 
 
+class ScholarshipItem(BaseModel):
+    model_config = MODEL_CONFIG
+
+    scholarship_name: str
+    provider: str
+    eligibility: str
+    amount: str
+    deadline: str
+    renewable: bool = False
+    match_score: float | None = None
+    eligibility_status: str | None = None
+    summary: str | None = None
+    official_link: str | None = None
+
+
+class ScholarshipData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    scholarships: list[ScholarshipItem] = Field(default_factory=list)
+
+
+class RoadmapNode(BaseModel):
+    model_config = MODEL_CONFIG
+
+    title: str
+    description: str
+    estimated_duration: str
+    skills: list[str] = Field(default_factory=list)
+    resources: list[str] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    projects: list[str] = Field(default_factory=list)
+    milestone: str | None = None
+
+class CareerRoadmapData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    roadmap_steps: list[RoadmapNode] = Field(default_factory=list)
+    certifications: list[str] = Field(default_factory=list)
+    books: list[str] = Field(default_factory=list)
+    youtube_channels: list[str] = Field(default_factory=list)
+    github_projects: list[str] = Field(default_factory=list)
+    practice_platforms: list[str] = Field(default_factory=list)
+    internship_strategy: str | None = None
+    interview_preparation: str | None = None
+    salary_progression: str | None = None
+    top_companies: list[str] = Field(default_factory=list)
+    skills_per_stage: dict | None = Field(default_factory=dict)
+    timeline: str | None = None
+
+
+class ResumeData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    ats_score: int | None = None
+    resume_summary: str | None = None
+    missing_skills: list[str] = Field(default_factory=list)
+    detected_skills: list[str] = Field(default_factory=list)
+    projects: list[dict] = Field(default_factory=list)
+    experience: list[dict] = Field(default_factory=list)
+    education: list[dict] = Field(default_factory=list)
+    grammar_issues: list[str] = Field(default_factory=list)
+    weak_bullet_points: list[str] = Field(default_factory=list)
+    formatting_suggestions: list[str] = Field(default_factory=list)
+    suggested_certifications: list[str] = Field(default_factory=list)
+    suggested_improvements: list[str] = Field(default_factory=list)
+    future_ready_skills: list[str] = Field(default_factory=list)
+
+class JobDescriptionData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    required_skills: list[str] = Field(default_factory=list)
+    preferred_skills: list[str] = Field(default_factory=list)
+    experience: str | None = None
+    education: str | None = None
+    certifications: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    tools: list[str] = Field(default_factory=list)
+    frameworks: list[str] = Field(default_factory=list)
+    technologies: list[str] = Field(default_factory=list)
+    soft_skills: list[str] = Field(default_factory=list)
+    location: str | None = None
+    employment_type: str | None = None
+    salary_range: str | None = None
+
+class ResumeMatchData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    overall_match_score: int | None = None
+    matched_skills: list[str] = Field(default_factory=list)
+    missing_skills: list[str] = Field(default_factory=list)
+    matched_keywords: list[str] = Field(default_factory=list)
+    missing_keywords: list[str] = Field(default_factory=list)
+    experience_gap: str | None = None
+    education_gap: str | None = None
+    certification_gap: str | None = None
+    project_gap: str | None = None
+    ATS_score: int | None = None
+    improvement_priority: list[str] = Field(default_factory=list)
+    recommended_courses: list[str] = Field(default_factory=list)
+    recommended_projects: list[str] = Field(default_factory=list)
+    gemini_suggestions: str | None = None
+
+class SavedCareerPlanData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    plans: list[Any] = Field(default_factory=list) # Replaced with 'SavedCareerPlan' inside user_models, this wrapper can hold them
+
+class ScholarshipBookmarkData(BaseModel):
+    model_config = MODEL_CONFIG
+
+    bookmarks: list[Any] = Field(default_factory=list)
+
+class ExportResult(BaseModel):
+    model_config = MODEL_CONFIG
+
+    file_url: str | None = None
+    base64_data: str | None = None
+    filename: str | None = None
+
+
 # Unified response models
 
 
@@ -210,6 +338,9 @@ ResponseData: TypeAlias = (
     | MedicalData
     | CodingData
     | CollegeData
+    | ScholarshipData
+    | CareerRoadmapData
+    | ResumeData
     | GeneralData
 )
 
@@ -272,6 +403,7 @@ class ChatResponse(BaseResponse):
     data: ResponseData | None = None  # typed domain data dict
     response: str  # formatted string (backward compat)
     messages: list[ChatMessage] | None = None
+    chat_title: str | None = None
 
 
 class ErrorResponse(BaseResponse):

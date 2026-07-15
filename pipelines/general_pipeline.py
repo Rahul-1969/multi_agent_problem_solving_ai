@@ -16,6 +16,8 @@ NOT for CS concepts (→ education), coding (→ coding), medical (→ medical),
 or college (→ college).
 
 Uses compiled regex patterns for efficient matching.
+
+# TODO: Migrate to PipelineResult(response=..., data=GeneralData(...)) — see formatter_dispatcher._LEGACY_PIPELINES
 """
 
 from utils.logger import get_logger
@@ -118,7 +120,7 @@ def _call_safe(prompt: str, tokens: int, system: str) -> str:
         )
 
 
-def general_pipeline(query: str) -> PipelineResult:
+def general_pipeline(query: str, **kwargs) -> PipelineResult:
     """
     Entry point for general queries.
     Returns structured general data alongside formatted display string.

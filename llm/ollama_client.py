@@ -113,13 +113,17 @@ def call_llm(
     system: str = "",
     num_predict: int = 512,
     temperature: float = 0.3,
+    domain: str = "",
 ) -> str:
     """
     Cached wrapper for calling the local Ollama LLM.
     """
     prompt = prompt.strip()
     system = system.strip()
-    return _cached_call(prompt, system, num_predict, temperature)
+    result = _cached_call(prompt, system, num_predict, temperature, domain=domain)
+    if domain:
+        logger.debug("Cache hit | domain=%s", domain)
+    return result
 
 
 async def async_call_llm(
@@ -127,6 +131,7 @@ async def async_call_llm(
     system: str = "",
     num_predict: int = 512,
     temperature: float = 0.3,
+    domain: str = "",
 ) -> str:
     """
     Async wrapper that delegates to the sync ``call_llm`` via
@@ -135,7 +140,7 @@ async def async_call_llm(
     prompt = prompt.strip()
     system = system.strip()
     return await asyncio.to_thread(
-        _cached_call, prompt, system, num_predict, temperature
+        _cached_call, prompt, system, num_predict, temperature, domain
     )
 
 

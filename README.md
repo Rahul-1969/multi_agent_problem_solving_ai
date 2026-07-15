@@ -2,11 +2,10 @@
 
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.10+-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Python](https://img.shields.io/badge/Python-3.12+-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
 ![React](https://img.shields.io/badge/React-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
 ![Vite](https://img.shields.io/badge/Vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
 *An intelligent, highly scalable platform combining autonomous LLM agents with a modern React frontend to deliver specialized counseling, coding, medical, and educational intelligence.*
 
@@ -14,98 +13,124 @@
 
 ---
 
-## Overview
+## 📖 Overview
 
-This project implements a powerful **Multi-Agent Architecture** built with **FastAPI** on the backend and **React + Vite** on the frontend. Rather than relying on a single monolithic LLM prompt, the system intelligently routes natural language queries to highly specialized domain agents (College Counselor, Medical AI, Coding Assistant, Education AI).
+This project implements a powerful **Multi-Agent Architecture** built with **FastAPI** on the backend and **React + Vite** on the frontend. Rather than relying on a single monolithic LLM prompt, the system intelligently routes natural language queries to highly specialized domain agents.
 
 A standout feature is the **AI College Counseling Platform**, which transforms raw metadata from engineering colleges into highly personalized, explainable recommendations—calculating ROI scores, student match percentages, and deep campus life analysis.
 
 ---
 
-## Key Features
+## 🚀 Key Features
 
-- **Multi-Agent Domain Routing**: A Supervisor Agent classifies incoming prompts and delegates tasks to specialized domain pipelines.
+- **Multi-Agent Domain Routing**: A Domain Router classifies incoming prompts and delegates tasks to specialized pipelines.
 - **AI College Counseling Platform**: Dynamically predicts safe, moderate, and dream colleges based on rank, computing advanced match scores and AI-driven explanations.
-- **Coding Assistant**: Automatically formats code snippets, calculates algorithmic complexity, and explains logic.
-- **Specialized AI Pipelines**: Dedicated pipelines structure complex medical and educational information into safe, digestible JSON payloads.
-- **Performance Optimized**: Built with strict Pydantic validation, memory caching (`functools.lru_cache`), and robust error handling to maintain sub-second response times.
-- **Modern UI/UX**: Responsive React frontend featuring clean typography, lucide-react icons, and distinct visual cards mapped perfectly to backend Pydantic models.
+- **Provider Architecture**: Seamlessly scales across LLMs (Google Gemini, Ollama) via a robust `ProviderFactory` singleton.
+- **Gemini Enhancement Layer**: An aggressive caching and token-optimization layer specifically built for Google Gemini integration.
+- **Specialized AI Pipelines**: Dedicated pipelines structure complex responses into strictly validated Pydantic models (PipelineResult).
+- **Modern UI/UX**: Fully responsive React frontend featuring clean typography, glassmorphism authentication, Zustand state management, and real-time comparison tables.
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-The system utilizes a modular, multi-agent workflow to ensure scalability and domain specificity.
+### High-Level System Architecture
 
 ```mermaid
 graph TD
-    User([User Prompt]) --> Frontend[React + Vite UI]
-    Frontend --> |POST /chat| API[FastAPI Gateway]
-    
-    API --> Supervisor[Supervisor Agent]
-    
-    Supervisor --> |College Intent| CollegePipe[College Pipeline]
-    Supervisor --> |Coding Intent| CodingPipe[Coding Pipeline]
-    Supervisor --> |Medical Intent| MedicalPipe[Medical Pipeline]
-    Supervisor --> |Education/General| EduPipe[Education Pipeline]
-    
-    CollegePipe --> Scoring[Scoring Engine]
-    CollegePipe --> RecEngine[Recommendation Engine]
-    CollegePipe --> Comparison[Comparison Engine]
-    
-    Scoring --> Response(Structured Pydantic Model)
-    RecEngine --> Response
-    Comparison --> Response
-    
-    CodingPipe --> Response
-    MedicalPipe --> Response
-    EduPipe --> Response
-    
-    Response --> API
-    API --> |JSON payload| Frontend
+    Frontend[Frontend] --> FastAPI[FastAPI]
+    FastAPI --> JWT[JWT Authentication]
+    JWT --> Chatbot[Chatbot Service]
+    Chatbot --> Router[Domain Router]
+    Router --> Dispatcher[Pipeline Dispatcher]
+    Dispatcher --> Pipeline[Pipeline]
+    Pipeline --> ProviderFactory[ProviderFactory]
+    ProviderFactory --> OllamaGemini[Ollama / Gemini]
+    OllamaGemini --> PipelineResult[PipelineResult]
+    PipelineResult --> FrontendResponse[Frontend Response]
 ```
 
-<details>
-<summary><b>Click here to view the step-by-step Multi-Agent Workflow</b></summary>
-
-1. **Extraction Phase**: A dedicated extractor agent parses the user's natural language to extract core parameters (e.g., student rank, category, branch preference).
-2. **Routing Phase**: The router analyzes the intent and selects the perfect pipeline (College, Coding, Medical, etc.).
-3. **Execution Phase**: The chosen pipeline orchestrates data fetching, scoring engines, and LLM text generation.
-4. **Validation Phase**: Pydantic strictly validates the exact payload structure before returning it.
-5. **Rendering Phase**: The React frontend dynamically mounts the correct component based on the detected domain type.
-
-</details>
+### AI Architecture
+- **Multi-Agent System**: specialized agents for medical, coding, college, and education.
+- **Resume Parser:** Upload PDFs and run deterministic skills matching without Gemini interference.
+- **Export Capabilities:** Export data into dynamically resolvable formats via the `ExporterRegistry` (PDF and JSON currently supported; CSV and DOCX extendable).
+- **Observability:** Tracks business intelligence events via the structured SQLite UsageTracker schema (events, api_metrics, pipeline_metrics, daily_metrics).
+- **Frontend Architecture:** Semantic Toast UI framework, robust `useExport` hooks orchestrating API queries safely decoupled from UI rendering, and centralized profile persistence.
+- **Ollama**: Localized LLM provider for secure inference.
+- **Gemini Enhancement Layer**: Caching and token optimization for Google Gemini.
+- **ProviderFactory**: Orchestrates model execution and fallback.
+- **Prompt Loader**: Manages system prompts dynamically.
+- **Metadata Refresh Engine**: Updates college data dynamically.
+- **Recommendation Engine**: Suggests optimized outcomes based on user data.
+- **Scoring Engine**: Evaluates metrics mathematically.
+- **Comparison Engine**: Prepares direct entity comparisons.
+- **PipelineResult**: Enforces structured JSON Pydantic contracts for every output.
+- **JWT Authentication**: Protects the API layer securely.
+- **Chat History**: Manages ongoing conversational context.
 
 ---
 
-## Folder Structure
+## 🎓 College Counseling Workflow
 
-The repository is divided cleanly into an API-driven backend and a React client.
+1. **Extraction Phase**: A dedicated extractor agent parses the user's natural language to identify student parameters.
+2. **Prediction Phase**: The prediction engine queries local metadata to find realistically attainable institutions based on historical cutoffs.
+3. **Scoring Phase**: Calculates financial ROI, NAAC/NIRF normalization, and lifestyle match scores.
+4. **Comparison Phase**: Injects a strictly formatted payload to allow the React frontend to natively render 1-to-1 statistics.
 
-<details>
-<summary><b>View Repository Structure</b></summary>
+---
+
+## 📸 Screenshots
+
+| Home Interface | Authentication |
+| :---: | :---: |
+| <img src="docs/images/home.png" alt="Home Screen" width="400"/> | <img src="docs/images/login.png" alt="Login Interface" width="400"/> |
+
+| Registration | Interactive Chat |
+| :---: | :---: |
+| <img src="docs/images/register.png" alt="Register Interface" width="400"/> | <img src="docs/images/chat.png" alt="Chat Interface" width="400"/> |
+
+### Specialized UI Renderings
+
+| College Prediction Card | Dynamic Comparison Engine |
+| :---: | :---: |
+| <img src="docs/images/college.png" alt="College Card" width="400"/> | <img src="docs/images/compare.png" alt="Comparison UI" width="400"/> |
+
+<div align="center">
+  <img src="docs/images/metrics.png" alt="Metrics Dashboard" width="800"/>
+  <br><i>Performance Metrics & Dashboard</i>
+</div>
+
+---
+
+## 📂 Folder Structure
 
 ```text
 .
 ├── backend/
-│   ├── models/            # Pydantic request/response models
-│   └── services/          # Pure-function engines (Scoring, Recommendations, Comparisons)
-├── pipelines/             # Orchestrators for each specific AI domain
-├── agents/                # Prompts and LLM interaction logic
-├── tools/                 # Utilities like metadata_loader and predictors
-├── data/                  # Static metadata (e.g., college_metadata.json)
-├── frontend/              # React + Vite UI application
-├── router/                # FastAPI routing definitions
-├── tests/                 # Pytest test suites
-├── app.py                 # FastAPI application entry point
+│   ├── api/routes/        # FastAPI route controllers
+│   ├── auth/              # JWT, hashing, and User models
+│   ├── cache/             # SQLite Gemini cache and optimization
+│   ├── models/            # Pydantic schema validation
+│   ├── observability/     # Telemetry and logging
+│   ├── prompts/           # LLM Prompt Loader templates
+│   ├── providers/         # ProviderFactory, Ollama, Gemini integrations
+│   └── services/          # Engines (Scoring, Comparison, Recommendation)
+├── frontend/              
+│   ├── src/
+│   │   ├── components/    # Reusable React components
+│   │   ├── context/       # React Context
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── pages/         # High-level route pages
+│   │   ├── store/         # Zustand global state management
+│   │   └── utils/         # Reusable validation and formatting
+├── docker-compose.yml     # Container orchestration
+├── Dockerfile             # Backend Dockerfile
 └── requirements.txt       # Python dependencies
 ```
 
-</details>
-
 ---
 
-## Installation & Setup
+## ⚙️ Installation & Setup
 
 ### 1. Clone the repository
 ```bash
@@ -137,69 +162,67 @@ Create a `.env` file in the root directory based on `.env.example`:
 ```env
 # Example .env
 GEMINI_API_KEY=your_google_gemini_api_key
+JWT_SECRET_KEY=your_jwt_secret_key
 ENVIRONMENT=development
 CORS_ORIGINS=http://localhost:5173
 ```
 
 ---
 
-## Running the Project
+## 🐳 Docker Deployment
 
-To run both servers, open two terminal windows:
+The fastest way to deploy the entire stack is via Docker Compose.
 
-**Terminal 1 (Backend):**
 ```bash
-uvicorn app:app --reload
+docker-compose up --build -d
 ```
-The FastAPI server will start on `http://127.0.0.1:8000`. API documentation is available at `http://127.0.0.1:8000/docs`.
-
-**Terminal 2 (Frontend):**
-```bash
-cd frontend
-npm run dev
-```
-The React app will be available at `http://localhost:5173`.
+- The FastAPI backend will bind to `http://localhost:8000`
+- The Vite frontend will bind to `http://localhost:80`
 
 ---
 
-## Visuals
+## 🔌 API Architecture
 
-| Home Interface | Interactive Chat |
-| :---: | :---: |
-| <img src="docs/images/home.png" alt="Home Screen" width="400"/> | <img src="docs/images/chat.png" alt="Chat Interface" width="400"/> |
-
-### AI College Counseling Platform
-
-<div align="center">
-  <img src="docs/images/college.png" alt="College Counseling Analysis" width="800"/>
-</div>
-
-*The College Counseling Platform transforms raw engineering college data into highly personalized recommendations, rendering custom React cards with clear ROI indicators and deep strength/weakness analysis.*
+The REST API isolates concerns into dedicated domains:
+- `/api/v1/auth`: JWT Login, Registration, Token Refresh.
+- `/api/v1/chat`: Managing Chat Sessions, History, and Streaming standard completions.
+- `/api/v1/college`, `/api/v1/coding`, `/api/v1/medical`, `/api/v1/education`: Specialized domain routes.
+- `/api/v1/pdf`: RAG and document context endpoints.
 
 ---
 
-## Testing
+## ⚡ Performance
 
-Backend unit tests are written using `pytest`. To run the full suite:
+The backend incorporates multiple performance optimizations:
+- **Provider abstraction**: Dynamically allocates payloads across providers seamlessly.
+- **SQLite Gemini cache**: Aggressively captures repeated queries to eliminate redundant API latency.
+- **Prompt caching**: Keeps heavy system prompts in memory for instantaneous execution.
+- **Thread-safe ProviderFactory**: Handles high concurrency via Singleton pattern mapping.
+- **Hybrid Rule + LLM classifier**: Identifies domains rapidly without solely depending on LLM parsing.
+- **Structured PipelineResult**: Ensures stable parser decoding with enforced Pydantic extraction.
+- **Metadata versioning**: The Metadata Refresh Engine actively serves the latest datasets without memory restarts.
 
+---
+
+## 🧪 Testing
+
+Testing is implemented rigorously utilizing the `pytest` framework.
+- **Backend tests exist**: Validating API routes, domain routing, services, and models.
+- **Current test count**: 196 active tests.
+- **Unit & Integration tests**: Includes isolated unit checks and end-to-end integration scenarios.
+
+Run the test suite locally:
 ```bash
 pytest tests/ -v
 ```
 
 ---
 
-## Contributing
+## 🗺️ Roadmap
 
-Contributions, issues, and feature requests are welcome. Feel free to check the issues page if you want to contribute.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+Planned features and future implementations:
+- [ ] GitHub Actions for CI/CD automation.
+- [ ] Retrieval-Augmented Generation (RAG) context enhancements.
+- [ ] Voice Support for real-time dictation.
+- [ ] Compare Improvements for visual graphs.
+- [ ] Scholarship Engine.

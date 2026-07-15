@@ -1,0 +1,14 @@
+Classify the following user query into exactly one category.
+Return ONLY one word. No explanation.
+
+Categories:
+  local        → general knowledge, definitions, history, math
+  live         → current events, "is X still", news, rankings, recent changes
+  college      → EAMCET prediction, rank, cutoff, admission
+  coding       → code, algorithm, debug, implement, syntax
+  medical      → symptoms, disease, medicine, health
+  education    → explain topic, study notes, syllabus, exam prep
+  career       → resume, interview, roadmap, salary, jobs, skills
+  scholarship  → scholarship, financial aid, NSP, AICTE grant
+
+Query: {query}

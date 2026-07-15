@@ -11,13 +11,17 @@ Flow
 
 The prompt enforces grounding: if the answer isn't in the PDF,
 the LLM is instructed to say so rather than hallucinate.
+
+# TODO: Migrate to PipelineResult(response=..., data=PDFData(...)) — see formatter_dispatcher._LEGACY_PIPELINES
 """
 
 from constants import DIVIDER
-from utils.logger import get_logger
-import re
 from llm.ollama_client import call_llm, async_call_llm
+from pipelines.pipeline_result import PipelineResult
+from backend.models.response_models import GeneralData
+from utils.logger import get_logger
 from tools.pdf_retriever import retrieve_chunks
+import re
 
 logger = get_logger(__name__)
 
@@ -116,11 +120,11 @@ def _prepare_pdf_pipeline(query: str, chunks: list[dict], filename: str):
     return prompt, ref_pages, None
 
 
-def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
+def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> PipelineResult:
     """Answer a question from the loaded PDF with page references (sync)."""
     prompt, ref_pages, early = _prepare_pdf_pipeline(query, chunks, filename)
     if early:
-        return early
+        return PipelineResult(response=early, data=GeneralData(answer=early))
 
     try:
         logger.info("PDF pipeline: querying '%s' | query: %s",
@@ -128,16 +132,18 @@ def pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
         raw = call_llm(prompt=prompt, system=_SYSTEM)
     except RuntimeError as exc:
         logger.error("PDF pipeline LLM error: %s", exc)
-        return f"⚠️  LLM unavailable.\nError: {exc}"
+        error_msg = f"⚠️  LLM unavailable.\nError: {exc}"
+        return PipelineResult(response=error_msg, data=GeneralData(answer=error_msg))
 
-    return _format_pdf_response(raw, ref_pages, filename)
+    formatted = _format_pdf_response(raw, ref_pages, filename)
+    return PipelineResult(response=formatted, data=GeneralData(answer=formatted))
 
 
-async def async_pdf_pipeline(query: str, chunks: list[dict], filename: str) -> str:
+async def async_pdf_pipeline(query: str, chunks: list[dict], filename: str) -> PipelineResult:
     """Answer a question from the loaded PDF with page references (async)."""
     prompt, ref_pages, early = _prepare_pdf_pipeline(query, chunks, filename)
     if early:
-        return early
+        return PipelineResult(response=early, data=GeneralData(answer=early))
 
     try:
         logger.info("Async PDF pipeline: querying '%s' | query: %s",
@@ -145,6 +151,8 @@ async def async_pdf_pipeline(query: str, chunks: list[dict], filename: str) -> s
         raw = await async_call_llm(prompt=prompt, system=_SYSTEM)
     except RuntimeError as exc:
         logger.error("Async PDF pipeline LLM error: %s", exc)
-        return f"⚠️  LLM unavailable.\nError: {exc}"
+        error_msg = f"⚠️  LLM unavailable.\nError: {exc}"
+        return PipelineResult(response=error_msg, data=GeneralData(answer=error_msg))
 
-    return _format_pdf_response(raw, ref_pages, filename)
+    formatted = _format_pdf_response(raw, ref_pages, filename)
+    return PipelineResult(response=formatted, data=GeneralData(answer=formatted))

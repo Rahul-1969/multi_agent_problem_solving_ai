@@ -41,6 +41,11 @@ class UserStore:
                 "name": user.get("name", "") or normalized_username,
                 "email": normalized_email,
                 "hashed_password": user.get("hashed_password", ""),
+                "profile": user.get("profile", {}),
+                "saved_colleges": user.get("saved_colleges", []),
+                "career_plans": user.get("career_plans", []),
+                "scholarship_bookmarks": user.get("scholarship_bookmarks", []),
+                "resume_matches": user.get("resume_matches", []),
             }
         return normalized_users
 
@@ -65,6 +70,11 @@ class UserStore:
             "name": name,
             "email": email,
             "hashed_password": hashed_password,
+            "profile": {},
+            "saved_colleges": [],
+            "career_plans": [],
+            "scholarship_bookmarks": [],
+            "resume_matches": [],
         }
         with self._lock:
             self._users[username] = user
@@ -77,5 +87,65 @@ class UserStore:
     def email_exists(self, email: str) -> bool:
         return self.get_user_by_email(email) is not None
 
+    def update_profile(self, username: str, profile_data: dict[str, Any]) -> dict[str, Any] | None:
+        normalized = str(username).strip().lower()
+        with self._lock:
+            if normalized in self._users:
+                self._users[normalized]["profile"] = profile_data
+                self._save()
+                return self._users[normalized]
+        return None
+
+    def update_saved_colleges(self, username: str, saved_colleges: list[dict[str, Any]]) -> dict[str, Any] | None:
+        normalized = str(username).strip().lower()
+        with self._lock:
+            if normalized in self._users:
+                self._users[normalized]["saved_colleges"] = saved_colleges
+                self._save()
+                return self._users[normalized]
+        return None
+
+    def update_career_plans(self, username: str, career_plans: list[dict[str, Any]]) -> dict[str, Any] | None:
+        normalized = str(username).strip().lower()
+        with self._lock:
+            if normalized in self._users:
+                self._users[normalized]["career_plans"] = career_plans
+                self._save()
+                return self._users[normalized]
+        return None
+
+    def update_scholarship_bookmarks(self, username: str, scholarship_bookmarks: list[dict[str, Any]]) -> dict[str, Any] | None:
+        normalized = str(username).strip().lower()
+        with self._lock:
+            if normalized in self._users:
+                self._users[normalized]["scholarship_bookmarks"] = scholarship_bookmarks
+                self._save()
+                return self._users[normalized]
+        return None
+
+    def update_resume_matches(self, username: str, resume_matches: list[dict[str, Any]]) -> dict[str, Any] | None:
+        normalized = str(username).strip().lower()
+        with self._lock:
+            if normalized in self._users:
+                self._users[normalized]["resume_matches"] = resume_matches
+                self._save()
+                return self._users[normalized]
+        return None
+
+    def list_users(self) -> list[dict[str, Any]]:
+        """
+        Returns a list of users with non-sensitive fields only.
+        """
+        with self._lock:
+            users = []
+            for username, data in self._users.items():
+                users.append({
+                    "username": username,
+                    "email": data.get("email"),
+                    "name": data.get("name"),
+                    "career_plans_count": len(data.get("career_plans", [])),
+                    "saved_colleges_count": len(data.get("saved_colleges", [])),
+                })
+            return users
 
 user_store = UserStore()

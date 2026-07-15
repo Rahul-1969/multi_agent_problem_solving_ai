@@ -23,6 +23,9 @@ from backend.services.formatter_dispatcher import dispatch_formatter
 from backend.services.pipeline_dispatcher import dispatch_pipeline
 from constants.domains import GENERAL_DOMAIN
 from router.domain_router import route_domain
+from backend.services.title_service import generate_title
+from backend.services.chat_history import chat_history_manager
+from config.ai_features import ENABLE_CHAT_TITLES, ENABLE_GEMINI
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -35,7 +38,13 @@ INTERNAL_ERROR_MESSAGE = (
 )
 
 
-def process_query(message: str) -> ChatResponse:
+def process_query(
+    message: str, 
+    username: str = "anonymous", 
+    chat_id: str = None, 
+    is_first_message: bool = False, 
+    chat_history: list = None
+) -> ChatResponse:
     """
     Route, process, and structure the response.
 
@@ -46,9 +55,6 @@ def process_query(message: str) -> ChatResponse:
 
     Returns:
       ChatResponse with domain, response, data, and optional error.
-
-    Unexpected exceptions are logged with full traceback and re-raised
-    so the backend terminal always shows the root cause.
     """
     domain = DEFAULT_DOMAIN
     query = message.strip()
@@ -61,9 +67,38 @@ def process_query(message: str) -> ChatResponse:
             query[:80],
         )
 
-        result = dispatch_pipeline(domain, query)
+        # Build kwargs for pipelines
+        kwargs = {
+            "username": username,
+            "chat_history": chat_history,
+        }
+        
+        # NOTE: If dispatch_pipeline doesn't accept kwargs yet, we might need to wrap it.
+        # But we pass kwargs inside the pipeline logic. Wait, currently dispatch_pipeline takes (domain, query).
+        # We need to pass kwargs to dispatch_pipeline.
+        result = dispatch_pipeline(domain, query, **kwargs)
         response = result.response if hasattr(result, "response") else result
         data = dispatch_formatter(domain, result, query)
+        
+        chat_title = None
+        if is_first_message and ENABLE_CHAT_TITLES and ENABLE_GEMINI and chat_id:
+            try:
+                chat_title = generate_title(query)
+            except Exception:
+                logger.exception(
+                    "Failed to generate chat title | username=%s chat_id=%s",
+                    username,
+                    chat_id,
+                )
+                chat_title = None
+            if chat_title:
+                chat_history_manager.update_title(username, chat_id, chat_title)
+                logger.info(
+                    "Chat title saved | username=%s chat_id=%s title=%s",
+                    username,
+                    chat_id,
+                    chat_title,
+                )
 
         # If the pipeline dispatcher returned an internal error message,
         # preserve the failure signal for the API response.
@@ -81,6 +116,7 @@ def process_query(message: str) -> ChatResponse:
             domain=domain,
             response=response,
             data=data,
+            chat_title=chat_title,
         )
     except Exception:
         logger.exception(

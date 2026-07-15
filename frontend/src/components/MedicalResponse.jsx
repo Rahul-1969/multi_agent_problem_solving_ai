@@ -1,14 +1,14 @@
 import MarkdownRenderer from "./MarkdownRenderer";
-import { Stethoscope, AlertCircle, Clock } from "lucide-react";
+import { Stethoscope, AlertCircle } from "lucide-react";
 
 export default function MedicalResponse({ data }) {
   if (!data) return null;
 
   const {
-    symptoms = "",
-    possible_causes = [],
-    recommendations = "",
-    when_to_consult = "",
+    conditions = "",
+    treatments = "",
+    lifestyle = "",
+    emergency = "",
     disclaimer = "This is for informational purposes only. Please consult a healthcare professional for proper diagnosis.",
   } = data;
 
@@ -20,48 +20,41 @@ export default function MedicalResponse({ data }) {
         <h1>Medical Assessment</h1>
       </div>
 
-      {/* Symptoms */}
-      {symptoms && (
+      {/* Conditions */}
+      {conditions && (
         <div className="response-section">
-          <h2>Symptoms Identified</h2>
-          <MarkdownRenderer content={symptoms} />
+          <h2>Possible Conditions</h2>
+          <MarkdownRenderer content={conditions} />
         </div>
       )}
 
-      {/* Possible Causes */}
-      {possible_causes && possible_causes.length > 0 && (
+      {/* Treatments */}
+      {treatments && (
         <div className="response-section">
-          <h2>Possible Causes</h2>
-          <ul className="causes-list">
-            {possible_causes.map((cause, idx) => (
-              <li key={idx}>
-                <AlertCircle size={14} />
-                {cause}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Recommendations */}
-      {recommendations && (
-        <div className="response-section">
-          <h2>Recommendations</h2>
+          <h2>Safe Treatments</h2>
           <div className="recommendations-box">
-            <MarkdownRenderer content={recommendations} />
+            <MarkdownRenderer content={treatments} />
           </div>
         </div>
       )}
 
-      {/* When to Consult */}
-      {when_to_consult && (
+      {/* Lifestyle */}
+      {lifestyle && (
+        <div className="response-section">
+          <h2>Lifestyle & Precautions</h2>
+          <MarkdownRenderer content={lifestyle} />
+        </div>
+      )}
+
+      {/* Emergency */}
+      {emergency && (
         <div className="response-section alert-section">
           <h2>
-            <Clock size={16} />
-            When to Consult a Doctor
+            <AlertCircle size={16} />
+            Seek Immediate Help If
           </h2>
           <div className="alert-box">
-            <MarkdownRenderer content={when_to_consult} />
+            <MarkdownRenderer content={emergency} />
           </div>
         </div>
       )}

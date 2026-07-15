@@ -16,6 +16,9 @@ from constants.domains import (
     GENERAL_DOMAIN,
     MEDICAL_DOMAIN,
     PDF_DOMAIN,
+    LIVE_DOMAIN,
+    CAREER_DOMAIN,
+    SCHOLARSHIP_DOMAIN,
 )
 from pipelines.pipeline_result import PipelineResult
 from pipelines.college_pipeline import college_pipeline
@@ -24,6 +27,9 @@ from pipelines.education_pipeline import education_pipeline
 from pipelines.general_pipeline import general_pipeline
 from pipelines.medical_pipeline import medical_pipeline
 from pipelines.pdf_pipeline import pdf_pipeline
+from pipelines.live_pipeline import process_query as live_pipeline
+from pipelines.career_pipeline import process_query as career_pipeline
+from pipelines.scholarship_pipeline import process_query as scholarship_pipeline
 from tools.pdf_session_manager import DEFAULT_SESSION_ID, pdf_session_manager
 from utils.logger import get_logger
 
@@ -35,12 +41,12 @@ PipelineMap: TypeAlias = dict[str, Callable[[str], PipelineOutput]]
 _DEFAULT_DOMAIN: Final[str] = GENERAL_DOMAIN
 
 
-def _pdf_pipeline_wrapper(query: str) -> str:
+def _pdf_pipeline_wrapper(query: str, **kwargs) -> str:
     """Adapter so pdf_pipeline fits the standard dispatch signature."""
     if not pdf_session_manager.is_loaded(DEFAULT_SESSION_ID):
         return "No PDF loaded. Please upload a PDF first using /pdf/load."
     store = pdf_session_manager.get_store(DEFAULT_SESSION_ID)
-    return pdf_pipeline(query, store.chunks, store.filename)
+    return pdf_pipeline(query, store.chunks, store.filename, **kwargs)
 
 
 _PIPELINES: Final[PipelineMap] = {
@@ -50,10 +56,13 @@ _PIPELINES: Final[PipelineMap] = {
     EDUCATION_DOMAIN: education_pipeline,
     GENERAL_DOMAIN: general_pipeline,
     PDF_DOMAIN: _pdf_pipeline_wrapper,
+    LIVE_DOMAIN: live_pipeline,
+    CAREER_DOMAIN: career_pipeline,
+    SCHOLARSHIP_DOMAIN: scholarship_pipeline,
 }
 
 
-def dispatch_pipeline(domain: str, query: str) -> PipelineOutput:
+def dispatch_pipeline(domain: str, query: str, **kwargs) -> PipelineOutput:
     """
     Dispatch the pipeline for a given domain.
 
@@ -67,7 +76,7 @@ def dispatch_pipeline(domain: str, query: str) -> PipelineOutput:
     pipeline = _PIPELINES.get(domain, general_pipeline)
 
     try:
-        return pipeline(query)
+        return pipeline(query, **kwargs)
     except Exception:
         logger.exception("Pipeline failed | domain=%s", domain)
         try:
@@ -75,7 +84,7 @@ def dispatch_pipeline(domain: str, query: str) -> PipelineOutput:
                 "Falling back to general pipeline | original_domain=%s",
                 domain,
             )
-            return general_pipeline(query)
+            return general_pipeline(query, **kwargs)
         except Exception:
             logger.exception(
                 "General fallback pipeline also failed | query=%s",

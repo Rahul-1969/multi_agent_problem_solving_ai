@@ -1,9 +1,10 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 import useAuthStore from '../store/authStore'
 import Sidebar from '../components/Sidebar'
 import ChatWindow from '../components/ChatWindow'
 import ChatInput from '../components/ChatInput'
+import ComparisonBar from '../components/ComparisonBar'
 import { PanelLeftClose, PanelLeftOpen, MessageSquare } from 'lucide-react'
 import { useChatStore } from '../store'
 import usePdfStore from '../store/pdfStore'
@@ -76,6 +77,7 @@ export default function ChatPage() {
         </div>
 
         <ChatWindow messages={activeMessages} isLoading={isLoading} onSelectPrompt={(prompt) => setInput(prompt)} />
+        <ComparisonBar />
         <ChatInput
           input={input}
           setInput={setInput}

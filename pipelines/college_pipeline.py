@@ -147,10 +147,12 @@ def _df_to_cards(df: pd.DataFrame, tier: str, user_data: dict) -> list[CollegeCa
 
 # ── Pipeline entry point ──────────────────────────────────────────────────────
 
-def college_pipeline(query: str) -> PipelineResult:
+def college_pipeline(query: str, **kwargs) -> PipelineResult:
     """
     Entry point for college prediction queries.
     """
+    # Extract username for potential saved college functionality
+    username = kwargs.get("username", "anonymous")
     # ── Step 1: Extract structured info from query ────────────────────────────
     user_data = extract_student_info(query)
 

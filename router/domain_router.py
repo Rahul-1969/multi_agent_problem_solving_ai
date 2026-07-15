@@ -26,7 +26,11 @@ from constants.domains import (
     GENERAL_DOMAIN,
     MEDICAL_DOMAIN,
     PDF_DOMAIN,
+    LIVE_DOMAIN,
+    CAREER_DOMAIN,
+    SCHOLARSHIP_DOMAIN,
 )
+from tools.query_classifier import classify_intent
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -474,11 +478,30 @@ _PHRASE_KEYWORDS: dict[str, dict[str, int]] = {
 @lru_cache(maxsize=512)
 def route_domain(query: str) -> str:
     """
-    Score all domains simultaneously and return the highest-scoring one.
-    Returns: 'pdf' | 'coding' | 'medical' | 'college' | 'education' | 'general'
+    1. Hybrid classification (Rule filter + LLM Fallback)
+    2. Detailed fallback scoring for 'local' intent.
+    Returns: 'pdf' | 'coding' | 'medical' | 'college' | 'education' | 'general' | 'live' | 'career' | 'scholarship'
     """
     q = query.strip().lower()
-
+    
+    # 1. Ask the hybrid classifier
+    intent = classify_intent(q)
+    
+    valid_domains = {
+        "live": LIVE_DOMAIN,
+        "career": CAREER_DOMAIN,
+        "scholarship": SCHOLARSHIP_DOMAIN,
+        "college": COLLEGE_DOMAIN,
+        "coding": CODING_DOMAIN,
+        "medical": MEDICAL_DOMAIN,
+        "education": EDUCATION_DOMAIN
+    }
+    
+    if intent in valid_domains:
+        logger.info("Hybrid classifier selected: %s", intent)
+        return valid_domains[intent]
+        
+    # 2. If 'local' or unknown, use fine-grained scoring
     scores = {domain: _score(q, domain) for domain in _DOMAIN_KEYWORDS}
 
     # Boost education score when query INTENT words combine with CS subject

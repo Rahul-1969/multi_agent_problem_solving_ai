@@ -1,4 +1,5 @@
-import { MessageSquare, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Plus, Trash2, GraduationCap, Map, FileText, Award } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import UserProfile from "./UserProfile";
 
 export default function Sidebar({
@@ -9,6 +10,9 @@ export default function Sidebar({
   onDeleteChat,
   sidebarOpen
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   return (
     <div className={`sidebar ${sidebarOpen ? "" : "sidebar-hidden"}`}>
       <div className="sidebar-header">
@@ -46,6 +50,40 @@ export default function Sidebar({
             </div>
           ))
         )}
+
+        <div className="chat-list-section-title" style={{ marginTop: "24px" }}>Apps & Tools</div>
+        
+        <div
+          className={`chat-item ${location.pathname === "/saved-colleges" ? "active" : ""}`}
+          onClick={() => navigate("/saved-colleges")}
+        >
+          <GraduationCap size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
+          <div className="chat-item-text">Saved Colleges</div>
+        </div>
+
+        <div
+          className={`chat-item ${location.pathname === "/career-plans" ? "active" : ""}`}
+          onClick={() => navigate("/career-plans")}
+        >
+          <Map size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
+          <div className="chat-item-text">Career Plans</div>
+        </div>
+
+        <div
+          className={`chat-item ${location.pathname === "/resume-match" ? "active" : ""}`}
+          onClick={() => navigate("/resume-match")}
+        >
+          <FileText size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
+          <div className="chat-item-text">Resume Match</div>
+        </div>
+
+        <div
+          className={`chat-item ${location.pathname === "/saved-scholarships" ? "active" : ""}`}
+          onClick={() => navigate("/saved-scholarships")}
+        >
+          <Award size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
+          <div className="chat-item-text">Saved Scholarships</div>
+        </div>
       </div>
 
       <div className="sidebar-footer">

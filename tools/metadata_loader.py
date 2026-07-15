@@ -22,7 +22,11 @@ logger = get_logger(__name__)
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
 _METADATA_PATH: Final[Path] = (
-    Path(__file__).parent.parent / "data" / "college_metadata.json"
+    Path(__file__).parent.parent / "data" / "metadata" / "colleges.json"
+)
+
+_SCHOLARSHIP_METADATA_PATH: Final[Path] = (
+    Path(__file__).parent.parent / "data" / "metadata" / "scholarships.json"
 )
 
 # ─── Default metadata used for colleges not in the JSON ───────────────────────
@@ -55,9 +59,10 @@ DEFAULT_META: Final[dict[str, Any]] = {
 # ─── Module-level cache (loaded once per process) ─────────────────────────────
 
 _metadata: dict[str, dict[str, Any]] | None = None
+_scholarship_metadata: dict[str, dict[str, Any]] | None = None
 
 
-def load_college_metadata() -> dict[str, dict[str, Any]]:
+def load_college_metadata(force_reload: bool = False) -> dict[str, dict[str, Any]]:
     """
     Return the full college metadata dict (cached after first call).
 
@@ -66,7 +71,7 @@ def load_college_metadata() -> dict[str, dict[str, Any]]:
     """
     global _metadata
 
-    if _metadata is not None:
+    if _metadata is not None and not force_reload:
         logger.debug("Using cached college metadata.")
         return _metadata
 
@@ -102,3 +107,39 @@ def get_college_meta(college_code: str) -> dict[str, Any]:
     so callers never need to handle a missing-key case.
     """
     return load_college_metadata().get(college_code, DEFAULT_META)
+
+
+def load_scholarship_metadata(force_reload: bool = False) -> dict[str, dict[str, Any]]:
+    """
+    Return the full scholarship metadata dict (cached after first call).
+    """
+    global _scholarship_metadata
+
+    if _scholarship_metadata is not None and not force_reload:
+        logger.debug("Using cached scholarship metadata.")
+        return _scholarship_metadata
+
+    if not _SCHOLARSHIP_METADATA_PATH.exists():
+        logger.warning(
+            "Scholarship metadata file not found at %s. Using empty dict.", _SCHOLARSHIP_METADATA_PATH
+        )
+        _scholarship_metadata = {}
+        return _scholarship_metadata
+
+    logger.info("Loading scholarship metadata from %s", _SCHOLARSHIP_METADATA_PATH)
+    try:
+        with open(_SCHOLARSHIP_METADATA_PATH, encoding="utf-8") as fh:
+            _scholarship_metadata = json.load(fh)
+        logger.info("Loaded metadata for %d scholarships.", len(_scholarship_metadata))
+    except Exception:
+        logger.exception("Failed to load scholarship metadata. Falling back to empty dict.")
+        _scholarship_metadata = {}
+
+    return _scholarship_metadata
+
+
+def get_scholarship_meta(code: str) -> dict[str, Any]:
+    """
+    Return metadata for a given scholarship code.
+    """
+    return load_scholarship_metadata().get(code, {})

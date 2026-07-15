@@ -116,6 +116,13 @@ class ChatHistoryManager:
         chat = self._user_chats(username).get(chat_id)
         return self._copy_chat(chat) if chat else None
 
+    def update_title(self, username: str, chat_id: str, title: str) -> None:
+        with self._lock:
+            chat = self._user_chats(username).get(chat_id)
+            if chat:
+                chat["title"] = title
+                self._persist()
+
     def delete_chat(self, username: str, chat_id: str) -> bool:
         with self._lock:
             chats = self._user_chats(username)

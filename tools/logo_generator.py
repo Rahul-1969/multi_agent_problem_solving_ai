@@ -12,7 +12,7 @@ def extract_domain(url):
     return domain.strip()
 
 def run():
-    path = Path("data/college_metadata.json")
+    path = Path("data/metadata/colleges.json")
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
         

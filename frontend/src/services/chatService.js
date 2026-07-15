@@ -45,6 +45,7 @@ const chatService = {
     return {
       ...mapChatResponse(response),
       messages: response.data?.messages ?? null,
+      chat_title: response.data?.chat_title ?? null,
       raw: response.data,
     }
   },

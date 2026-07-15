@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useEffect, useContext, useCallback } from 'react'
 import useAuthStore from '../store/authStore'
+import useChatStore from '../store/chatStore'
 import authService from '../services/authService'
 
 export const AuthContext = createContext()
@@ -15,6 +16,7 @@ export default function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await authService.logout()
     storeLogout()
+    useChatStore.getState().clearComparison()
   }, [storeLogout])
 
   useEffect(() => {

@@ -11,7 +11,7 @@ def test_process_query_returns_error_response_on_exception(caplog, monkeypatch):
     )
     monkeypatch.setattr(
         'backend.services.chatbot_service.dispatch_pipeline',
-        lambda domain, query: (_ for _ in ()).throw(RuntimeError('pipeline boom'))
+        lambda domain, query, **kw: (_ for _ in ()).throw(RuntimeError('pipeline boom'))
     )
 
     with caplog.at_level(logging.ERROR, logger='backend.services.chatbot_service'):
@@ -42,7 +42,7 @@ def test_process_query_success(monkeypatch):
     )
     monkeypatch.setattr(
         'backend.services.chatbot_service.dispatch_pipeline',
-        lambda domain, query: FakeResult()
+        lambda domain, query, **kw: FakeResult()
     )
     monkeypatch.setattr(
         'backend.services.chatbot_service.dispatch_formatter',

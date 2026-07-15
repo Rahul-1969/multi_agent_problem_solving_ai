@@ -1,7 +1,7 @@
 import axios from 'axios'
 import useAuthStore from '../store/authStore'
 
-const DEFAULT_TIMEOUT = 120000
+const DEFAULT_TIMEOUT = 300000
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 import { clearStoredUser } from './authStorage'
 

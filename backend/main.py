@@ -28,8 +28,9 @@ from utils.logger import get_logger, setup_logging
 # Add project root to path so pipelines, tools, etc. are importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from backend.api.routes.chat      import router as chat_router
 from backend.api.routes.education import router as education_router
@@ -38,10 +39,16 @@ from backend.api.routes.medical   import router as medical_router
 from backend.api.routes.college   import router as college_router
 from backend.api.routes.pdf       import router as pdf_router
 from backend.api.routes.auth      import router as auth_router
+from backend.api.routes.resume    import router as resume_router
+from backend.api.routes.admin     import router as admin_router
+from backend.api.routes.profile   import router as profile_router
+from backend.api.routes.export    import router as export_router
+from backend.observability.metrics_router import router as metrics_router
 from config import ensure_directories
 from tools.pdf_session_store import DEFAULT_SESSION_ID, pdf_session_store
 from tools.data_loader import load_data
-from tools.metadata_loader import load_college_metadata
+from tools.metadata_loader import load_college_metadata, load_scholarship_metadata
+from backend.cache.usage_tracker import usage_tracker
 
 setup_logging()
 logger = get_logger("backend")
@@ -69,6 +76,12 @@ async def lifespan(app: FastAPI):
         logger.info("College metadata ready: %d entries", len(meta))
     except Exception:
         logger.warning("Could not pre-load college metadata — will load on demand")
+
+    try:
+        smeta = load_scholarship_metadata()
+        logger.info("Scholarship metadata ready: %d entries", len(smeta))
+    except Exception:
+        logger.warning("Could not pre-load scholarship metadata — will load on demand")
 
     yield
 
@@ -125,6 +138,41 @@ app.include_router(medical_router,   tags=["Medical"])
 app.include_router(college_router,   tags=["College"])
 app.include_router(pdf_router,       tags=["PDF"])
 app.include_router(auth_router,      prefix="/auth", tags=["Auth"])
+app.include_router(resume_router,    tags=["Resume"])
+app.include_router(admin_router,     tags=["Admin"])
+app.include_router(profile_router)
+app.include_router(export_router)
+app.include_router(metrics_router)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled API Exception: {exc}")
+    # Extract username if available (best effort for unauthenticated requests)
+    username = "anonymous"
+    user_data = getattr(request.state, "user", None)
+    if user_data:
+        username = user_data.username
+    
+    usage_tracker.track_event(
+        username=username,
+        event_name="api_exception",
+        route=request.url.path,
+        status="500"
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
+
+
+
+@app.post("/admin/metadata/reload", tags=["Admin"])
+def reload_metadata_api():
+    """Explicitly reload all metadata without restarting FastAPI."""
+    cmeta = load_college_metadata(force_reload=True)
+    smeta = load_scholarship_metadata(force_reload=True)
+    return {"status": "success", "colleges_loaded": len(cmeta), "scholarships_loaded": len(smeta)}
+
 
 
 @app.get("/", tags=["Status"])

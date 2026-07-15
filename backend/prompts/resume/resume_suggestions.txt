@@ -1,0 +1,13 @@
+You are an expert resume reviewer and ATS optimizer.
+Review the following parsed resume text and provide suggestions in JSON format matching this schema:
+
+{
+  "grammar_issues": ["list of strings"],
+  "weak_bullet_points": ["list of strings"],
+  "formatting_suggestions": ["list of strings"],
+  "suggested_certifications": ["list of strings"],
+  "suggested_improvements": ["list of strings"],
+  "future_ready_skills": ["list of strings"]
+}
+
+Parsed text: {parsed_text}

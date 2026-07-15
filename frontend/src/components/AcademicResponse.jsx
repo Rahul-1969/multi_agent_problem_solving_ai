@@ -1,27 +1,29 @@
 import MarkdownRenderer from "./MarkdownRenderer";
-import { BookOpen, CheckCircle, Lightbulb, Brain } from "lucide-react";
+import { BookOpen, Lightbulb, Brain } from "lucide-react";
 
 export default function AcademicResponse({ data }) {
   if (!data) return null;
 
   const {
-    title = "",
+    topic = "",
     definition = "",
-    explanation = "",
+    key_points = "",
     example = "",
-    diagram = "",
-    key_formulas = [],
-    tips = [],
+    exam_tip = "",
+    working = "",
+    advantages = "",
+    disadvantages = "",
+    applications = "",
     summary = "",
   } = data;
 
   return (
     <div className="structured-response academic-response">
       {/* Title */}
-      {title && (
+      {topic && (
         <div className="response-title academic">
           <BookOpen size={20} />
-          <h1>{title}</h1>
+          <h1>{topic}</h1>
         </div>
       )}
 
@@ -35,25 +37,19 @@ export default function AcademicResponse({ data }) {
         </div>
       )}
 
-      {/* Explanation */}
-      {explanation && (
+      {/* Key Points */}
+      {key_points && (
         <div className="response-section">
-          <h2>Detailed Explanation</h2>
-          <MarkdownRenderer content={explanation} />
+          <h2>Key Points</h2>
+          <MarkdownRenderer content={key_points} />
         </div>
       )}
 
-      {/* Key Formulas */}
-      {key_formulas && key_formulas.length > 0 && (
+      {/* How It Works */}
+      {working && (
         <div className="response-section">
-          <h2>Key Formulas</h2>
-          <div className="formulas-grid">
-            {key_formulas.map((formula, idx) => (
-              <div key={idx} className="formula-card">
-                <MarkdownRenderer content={formula} />
-              </div>
-            ))}
-          </div>
+          <h2>How It Works</h2>
+          <MarkdownRenderer content={working} />
         </div>
       )}
 
@@ -67,31 +63,40 @@ export default function AcademicResponse({ data }) {
         </div>
       )}
 
-      {/* Diagram */}
-      {diagram && (
+      {/* Advantages */}
+      {advantages && (
         <div className="response-section">
-          <h2>Diagram</h2>
-          <div className="diagram-box">
-            <MarkdownRenderer content={diagram} />
-          </div>
+          <h2>Advantages</h2>
+          <MarkdownRenderer content={advantages} />
         </div>
       )}
 
-      {/* Study Tips */}
-      {tips && tips.length > 0 && (
+      {/* Disadvantages */}
+      {disadvantages && (
+        <div className="response-section">
+          <h2>Disadvantages</h2>
+          <MarkdownRenderer content={disadvantages} />
+        </div>
+      )}
+
+      {/* Applications */}
+      {applications && (
+        <div className="response-section">
+          <h2>Applications</h2>
+          <MarkdownRenderer content={applications} />
+        </div>
+      )}
+
+      {/* Exam Tip */}
+      {exam_tip && (
         <div className="response-section">
           <h2>
             <Lightbulb size={18} />
-            Study Tips
+            Exam Tip
           </h2>
-          <ul className="tips-list">
-            {tips.map((tip, idx) => (
-              <li key={idx}>
-                <CheckCircle size={14} />
-                {tip}
-              </li>
-            ))}
-          </ul>
+          <div className="tips-box">
+            <MarkdownRenderer content={exam_tip} />
+          </div>
         </div>
       )}
 

@@ -121,7 +121,7 @@ def _build_prompt(query: str, level: str) -> str:
     return base
 
 
-def education_pipeline(query: str) -> PipelineResult:
+def education_pipeline(query: str, **kwargs) -> PipelineResult:
     """
     Entry point for education queries.
     Returns structured education data alongside formatted display string.
@@ -197,27 +197,21 @@ def education_pipeline(query: str) -> PipelineResult:
     out.append(f"\n{DIVIDER}")
     formatted_response = "\n".join(out)
 
-    # Parse formatted response into EducationData model
-    parsed_sections = parse_sections(formatted_response, EDUCATION_LABELS)
-
-    definition_text = parsed_sections.get("definition", "").strip() or None
-    key_points_text = parsed_sections.get("key_points", "").strip() or None
-    exam_tip_text = parsed_sections.get("exam_tip", "").strip() or None
     education_data = EducationData(
         topic=query,
-        definition=definition_text,
-        key_points=key_points_text,
-        working=parsed_sections.get("working", "").strip() or None,
-        advantages=parsed_sections.get("advantages", "").strip() or None,
-        disadvantages=parsed_sections.get("disadvantages", "").strip() or None,
-        applications=parsed_sections.get("applications", "").strip() or None,
-        example=parsed_sections.get("example", "").strip() or None,
-        exam_tip=exam_tip_text,
-        summary=parsed_sections.get("summary", "").strip() or None,
+        definition=secs.get("definition", "").strip() or None,
+        key_points=secs.get("keypoints", "").strip() or None,
+        working=secs.get("working", "").strip() or None,
+        advantages=secs.get("advantages", "").strip() or None,
+        disadvantages=secs.get("disadvantages", "").strip() or None,
+        applications=secs.get("applications", "").strip() or None,
+        example=secs.get("example", "").strip() or None,
+        exam_tip=secs.get("examtip", "").strip() or None,
+        summary=secs.get("summary", "").strip() or None,
         title=query,
-        explanation=definition_text,
-        key_formulas=[key_points_text] if key_points_text else None,
-        tips=[exam_tip_text] if exam_tip_text else None,
+        explanation=secs.get("definition", "").strip() or None,
+        key_formulas=[secs.get("keypoints", "").strip()] if secs.get("keypoints", "").strip() else None,
+        tips=[secs.get("examtip", "").strip()] if secs.get("examtip", "").strip() else None,
     )
 
     return PipelineResult(response=formatted_response, data=education_data)

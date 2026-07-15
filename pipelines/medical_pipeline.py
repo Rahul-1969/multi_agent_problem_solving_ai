@@ -18,6 +18,8 @@ Changes in this version
 4. Medical diagnosis prompt improved:
    "List possible medical DIAGNOSES or CONDITIONS that could CAUSE
    these symptoms" — makes Phi3 give actual condition names.
+
+# TODO: Migrate to PipelineResult(response=..., data=MedicalData(...)) — see formatter_dispatcher._LEGACY_PIPELINES
 """
 
 from utils.logger import get_logger
@@ -138,7 +140,7 @@ def _sec(text: str) -> str:
     return text if text else "(not available)"
 
 
-def medical_pipeline(query: str) -> PipelineResult:
+def medical_pipeline(query: str, **kwargs) -> PipelineResult:
     """
     Entry point for medical queries.
     Returns structured medical data alongside formatted display string.
@@ -222,21 +224,15 @@ def medical_pipeline(query: str) -> PipelineResult:
     lines.append(_DISCLAIMER)
     formatted_response = "\n".join(lines)
 
-    # Parse formatted response into MedicalData model
-    parsed_sections = parse_sections(formatted_response, MEDICAL_LABELS)
-
-    conditions_text = parsed_sections.get("conditions", "").strip() or None
-    treatments_text = parsed_sections.get("treatments", "").strip() or None
-    emergency_text = parsed_sections.get("emergency", "").strip() or None
     medical_data = MedicalData(
-        conditions=conditions_text,
-        treatments=treatments_text,
-        lifestyle=parsed_sections.get("lifestyle", "").strip() or None,
-        emergency=emergency_text,
+        conditions=conditions or None,
+        treatments=treatments or None,
+        lifestyle=lifestyle or None,
+        emergency=emergency or None,
         symptoms=query,
-        possible_causes=[conditions_text] if conditions_text else None,
-        recommendations=treatments_text,
-        when_to_consult=emergency_text,
+        possible_causes=[conditions] if conditions else None,
+        recommendations=treatments or None,
+        when_to_consult=emergency or None,
     )
 
     return PipelineResult(response=formatted_response, data=medical_data)

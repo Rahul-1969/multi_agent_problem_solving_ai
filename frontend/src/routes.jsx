@@ -5,6 +5,11 @@ import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ChatPage from './pages/ChatPage'
+import ComparePage from './pages/ComparePage'
+import SavedCollegesPage from './pages/SavedCollegesPage'
+import CareerPlansPage from './pages/CareerPlansPage'
+import ResumeMatchPage from './pages/ResumeMatchPage'
+import SavedScholarshipsPage from './pages/SavedScholarshipsPage'
 
 function RequireAuth({ children }) {
   const { user, initializing } = useContext(AuthContext)
@@ -33,6 +38,46 @@ export default function AppRoutes() {
         element={
           <RequireAuth>
             <ChatPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/compare"
+        element={
+          <RequireAuth>
+            <ComparePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/saved-colleges"
+        element={
+          <RequireAuth>
+            <SavedCollegesPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/career-plans"
+        element={
+          <RequireAuth>
+            <CareerPlansPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/resume-match"
+        element={
+          <RequireAuth>
+            <ResumeMatchPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/saved-scholarships"
+        element={
+          <RequireAuth>
+            <SavedScholarshipsPage />
           </RequireAuth>
         }
       />

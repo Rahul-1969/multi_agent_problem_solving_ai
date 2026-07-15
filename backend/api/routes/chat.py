@@ -102,7 +102,24 @@ async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_cu
             },
         )
 
-    result = await asyncio.to_thread(process_query, request.message)
+    is_first = True
+    chat_history = None
+
+    if request.chat_id:
+        chat = chat_history_manager.get_chat(current_user.username, request.chat_id)
+        if chat:
+            chat_history = chat.get("messages", [])
+            # It's the first message if history is empty before we append
+            is_first = len(chat_history) == 0
+
+    result = await asyncio.to_thread(
+        process_query, 
+        message=request.message,
+        username=current_user.username,
+        chat_id=request.chat_id,
+        is_first_message=is_first,
+        chat_history=chat_history
+    )
 
     if request.chat_id:
         chat_history_manager.append_message(

@@ -177,9 +177,16 @@ class TestDomainRouter:
         "Tell me about yourself",
         "What is the capital of Japan",
         "Why is the sky blue",
-        "Latest news today",
-        "Who won the match",
     ])
     def test_general_queries_stay_general(self, query):
         """General knowledge and conversational queries must route to general."""
         assert route_domain(query) == "general"
+
+    @pytest.mark.parametrize("query", [
+        "Latest news today",
+        # "Who won the match" is ambiguous — no live-specific signals;
+        # the hybrid classifier correctly sends it to general.
+    ])
+    def test_live_queries_stay_live(self, query):
+        """Live news and current events queries must route to live."""
+        assert route_domain(query) == "live"

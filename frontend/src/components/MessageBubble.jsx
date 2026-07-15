@@ -7,6 +7,9 @@ import CodingResponse from "./CodingResponse";
 import MedicalResponse from "./MedicalResponse";
 import AcademicResponse from "./AcademicResponse";
 import CollegeResponse from "./CollegeResponse";
+import Scholarships from "./Scholarships";
+import CareerRoadmap from "./CareerRoadmap";
+import ResumeAnalyzer from "./ResumeAnalyzer";
 import useChatStore from "../store/chatStore";
 
 const DOMAIN_META = {
@@ -61,6 +64,12 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
       return <AcademicResponse data={data} />;
     } else if (domain === "college" && data) {
       return <CollegeResponse data={data} />;
+    } else if (domain === "scholarship" && data) {
+      return <Scholarships data={data} />;
+    } else if (domain === "career" && data && data.nodes) {
+      return <CareerRoadmap data={data} />;
+    } else if (domain === "resume" && data) {
+      return <ResumeAnalyzer data={data} />;
     }
 
     // Fallback: render as markdown for general, pdf, or raw text responses
