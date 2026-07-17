@@ -122,7 +122,7 @@ const useChatStore = create((set, get) => ({
     }
   },
 
-  async submitMessage(text) {
+  async submitMessage(text, useRag = false) {
     const trimmed = text?.trim()
     if (!trimmed) return
 
@@ -177,7 +177,7 @@ const useChatStore = create((set, get) => ({
           ),
         }))
       } else {
-        const result = await chatService.sendMessage(trimmed, currentChatId)
+        const result = await chatService.sendMessage(trimmed, currentChatId, useRag)
 
         // Derive domain from the response for pipeline visibility
         const domain = result?.domain || 'general'
@@ -190,6 +190,8 @@ const useChatStore = create((set, get) => ({
             domain: domain,
             data: result.data || null,
             text: result.response || '',
+            sources: result.sources || null,
+            used_rag: result.used_rag ?? null,
           }
 
           // Replace the loading placeholder with the real bot message

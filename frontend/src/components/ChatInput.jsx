@@ -9,7 +9,9 @@ export default function ChatInput({
   onClearPdf,
   onUploadPdf,
   isUploadingPdf,
-  isLoading
+  isLoading,
+  useRag,
+  setUseRag,
 }) {
   const fileInputRef = useRef(null);
 
@@ -97,6 +99,20 @@ export default function ChatInput({
           </button>
         </div>
         
+        <div className="chat-input-toolbar">
+          <label className="rag-toggle-label" htmlFor="rag-toggle">
+            <input
+              id="rag-toggle"
+              type="checkbox"
+              className="rag-toggle-checkbox"
+              checked={!!useRag}
+              onChange={(e) => setUseRag(e.target.checked)}
+              disabled={isLoading}
+            />
+            <span className="rag-toggle-text">Use my notes</span>
+          </label>
+        </div>
+
         <p className="disclaimer-text">
           NeuralChat can make mistakes. Verify important info.
         </p>

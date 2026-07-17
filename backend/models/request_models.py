@@ -17,6 +17,10 @@ class ChatRequest(MessageRequest):
         default=None,
         description="Optional chat ID for history tracking",
     )
+    use_rag: bool = Field(
+        default=False,
+        description="Whether to augment the query with user's RAG knowledge base",
+    )
 
 
 class ChatCreateRequest(BaseModel):

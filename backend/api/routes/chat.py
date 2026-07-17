@@ -112,14 +112,62 @@ async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_cu
             # It's the first message if history is empty before we append
             is_first = len(chat_history) == 0
 
-    result = await asyncio.to_thread(
-        process_query, 
-        message=request.message,
-        username=current_user.username,
-        chat_id=request.chat_id,
-        is_first_message=is_first,
-        chat_history=chat_history
-    )
+    used_rag_flag = None
+    sources_list = None
+
+    async def _fallback_to_standard():
+        return await asyncio.to_thread(
+            process_query, 
+            message=request.message,
+            username=current_user.username,
+            chat_id=request.chat_id,
+            is_first_message=is_first,
+            chat_history=chat_history
+        )
+
+    if request.use_rag:
+        try:
+            from backend.pipelines.rag_pipeline import RagPipeline
+            from backend.models.response_models import GeneralData
+            rag_pipeline = RagPipeline()
+            rag_result = await asyncio.to_thread(
+                rag_pipeline.execute,
+                user_id=current_user.username,
+                query=request.message
+            )
+            
+            if isinstance(rag_result.data, dict):
+                used_rag_flag = rag_result.data.get("used_rag")
+                sources_list = rag_result.data.get("sources")
+            
+            result = ChatResponse(
+                success=True,
+                domain=GENERAL_DOMAIN,
+                data=GeneralData(answer=rag_result.response),
+                response=rag_result.response
+            )
+            logger.info(
+                "Request served | username=%s domain=general(rag) used_rag=%s sources=%s",
+                current_user.username,
+                used_rag_flag,
+                sources_list,
+            )
+        except Exception as e:
+            logger.error("RAG pipeline failed for user %s: %s", current_user.username, e, exc_info=True)
+            used_rag_flag = False
+            result = await _fallback_to_standard()
+            logger.info(
+                "Request served (rag-fallback) | username=%s domain=%s",
+                current_user.username,
+                result.domain,
+            )
+    else:
+        result = await _fallback_to_standard()
+        logger.info(
+            "Request served | username=%s domain=%s",
+            current_user.username,
+            result.domain,
+        )
 
     if request.chat_id:
         chat_history_manager.append_message(
@@ -130,6 +178,8 @@ async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_cu
                 "content": result.response,
                 "domain": result.domain,
                 "data": result.data,
+                "sources": sources_list,
+                "used_rag": used_rag_flag,
                 "created_at": None,
             },
         )
@@ -147,6 +197,8 @@ async def chat(request: ChatRequest, current_user: TokenPayload = Depends(get_cu
         messages=messages,
         chat_id=request.chat_id,
         error=result.error,
+        sources=sources_list,
+        used_rag=used_rag_flag,
     )
 
 

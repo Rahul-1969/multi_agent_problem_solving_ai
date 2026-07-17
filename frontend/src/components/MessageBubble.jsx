@@ -1,6 +1,7 @@
+import { useState } from "react";
 import {
   Terminal, GraduationCap,
-  Stethoscope, BookOpen, FileText, User, Cpu, Sparkles
+  Stethoscope, BookOpen, FileText, User, Cpu, Sparkles, Copy, Check
 } from "lucide-react";
 import MarkdownRenderer from "./MarkdownRenderer";
 import CodingResponse from "./CodingResponse";
@@ -21,10 +22,21 @@ const DOMAIN_META = {
   pdf: { emoji: "📄", label: "PDF QA" },
 };
 
-export default function MessageBubble({ sender, text, content, domain, data }) {
+export default function MessageBubble({ sender, text, content, domain, data, sources, used_rag, prevUserText }) {
   const isUser = sender === "user";
   const displayText = text ?? content;
   const currentDomain = useChatStore((state) => state.currentDomain) || "general";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    const prompt = prevUserText ?? '';
+    const response = displayText ?? '';
+    const clipText = `prompt: ${prompt}\nresponse: ${response}`;
+    navigator.clipboard.writeText(clipText).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }).catch(() => {});
+  };
 
 
   // Render content based on domain & data structure
@@ -99,6 +111,23 @@ export default function MessageBubble({ sender, text, content, domain, data }) {
       )}
       <div className="message-content">
         {renderMessageContent()}
+        {!isUser && used_rag === true && Array.isArray(sources) && sources.length > 0 && (
+          <div className="rag-citation-strip">
+            📄 From: {sources.join(', ')}
+          </div>
+        )}
+        {!isUser && domain !== "loading" && (
+          <div className="msg-copy-row">
+            <button
+              className={`msg-copy-btn ${copied ? 'msg-copy-btn--done' : ''}`}
+              onClick={handleCopy}
+              title={copied ? 'Copied!' : 'Copy prompt & response'}
+              aria-label="Copy message"
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />}
+            </button>
+          </div>
+        )}
       </div>
       {isUser && (
         <div className="message-avatar-container user" title="You">

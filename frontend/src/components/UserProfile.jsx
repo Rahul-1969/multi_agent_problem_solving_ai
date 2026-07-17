@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { LogOut } from "lucide-react";
+import { LogOut, Pencil } from "lucide-react";
 
 export default function UserProfile() {
   const { user, logout } = useContext(AuthContext);
@@ -31,9 +31,14 @@ export default function UserProfile() {
         </div>
       </div>
       
-      <button className="logout-btn" onClick={logout} title="Sign Out">
-        <LogOut size={16} />
-      </button>
+      <div className="user-profile-actions" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <Link to="/profile/edit" className="logout-btn" title="Edit profile">
+          <Pencil size={16} />
+        </Link>
+        <button className="logout-btn" onClick={logout} title="Sign Out">
+          <LogOut size={16} />
+        </button>
+      </div>
     </div>
   );
 }

@@ -36,14 +36,15 @@ const chatService = {
     return response.data
   },
 
-  async sendMessage(message, chatId = null) {
-    const payload = { message }
+  async sendMessage(message, chatId = null, useRag = false) {
+    const payload = { message, use_rag: useRag }
     if (chatId) {
       payload.chat_id = chatId
     }
     const response = await apiService.post(CHAT, payload)
+    const mapped = mapChatResponse(response)
     return {
-      ...mapChatResponse(response),
+      ...mapped,
       messages: response.data?.messages ?? null,
       chat_title: response.data?.chat_title ?? null,
       raw: response.data,

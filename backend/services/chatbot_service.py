@@ -61,21 +61,14 @@ def process_query(
 
     try:
         domain = route_domain(query)
-        logger.info(
-            "Domain=%s | Query=%s",
-            domain,
-            query[:80],
-        )
+        logger.info("Domain=%s | Query=%s", domain, query[:80])
 
         # Build kwargs for pipelines
         kwargs = {
             "username": username,
             "chat_history": chat_history,
         }
-        
-        # NOTE: If dispatch_pipeline doesn't accept kwargs yet, we might need to wrap it.
-        # But we pass kwargs inside the pipeline logic. Wait, currently dispatch_pipeline takes (domain, query).
-        # We need to pass kwargs to dispatch_pipeline.
+
         result = dispatch_pipeline(domain, query, **kwargs)
         response = result.response if hasattr(result, "response") else result
         data = dispatch_formatter(domain, result, query)
@@ -120,8 +113,9 @@ def process_query(
         )
     except Exception:
         logger.exception(
-            "Unhandled error in chatbot_service.process_query | domain=%s",
+            "Unhandled error in process_query | domain=%s | query=%s",
             domain,
+            query[:80],
         )
         return ChatResponse(
             success=False,

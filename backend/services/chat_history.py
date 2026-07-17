@@ -70,6 +70,9 @@ class ChatHistoryManager:
             "domain": message.get("domain"),
             "data": message.get("data"),
             "created_at": message.get("created_at"),
+            # RAG metadata — optional, None for older messages that pre-date this field
+            "sources": message.get("sources"),
+            "used_rag": message.get("used_rag"),
         }
 
     def _copy_chat(self, chat: dict[str, Any]) -> dict[str, Any]:
@@ -159,6 +162,10 @@ class ChatHistoryManager:
                 "domain": message.get("domain"),
                 "data": data,
                 "created_at": message.get("created_at") or self._now_iso(),
+                # RAG metadata — None for non-RAG messages; persisted so history reloads
+                # show the citation strip correctly without a second API round-trip.
+                "sources": message.get("sources"),
+                "used_rag": message.get("used_rag"),
             }
 
             chat["messages"].append(entry)

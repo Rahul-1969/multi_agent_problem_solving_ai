@@ -44,6 +44,7 @@ from backend.api.routes.admin     import router as admin_router
 from backend.api.routes.profile   import router as profile_router
 from backend.api.routes.export    import router as export_router
 from backend.observability.metrics_router import router as metrics_router
+from backend.api.routes.knowledge import router as knowledge_router
 from config import ensure_directories
 from tools.pdf_session_store import DEFAULT_SESSION_ID, pdf_session_store
 from tools.data_loader import load_data
@@ -143,6 +144,7 @@ app.include_router(admin_router,     tags=["Admin"])
 app.include_router(profile_router)
 app.include_router(export_router)
 app.include_router(metrics_router)
+app.include_router(knowledge_router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

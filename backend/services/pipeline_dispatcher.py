@@ -71,19 +71,22 @@ def dispatch_pipeline(domain: str, query: str, **kwargs) -> PipelineOutput:
     - pipeline execution
     - pipeline exception handling
     - fallback to general pipeline
+
+    NOTE: When the domain pipeline raises and we fall back to general_pipeline,
+    the *domain variable* in chatbot_service still holds the originally classified
+    domain — so ChatResponse.domain will NOT become 'general' from this path.
+    The only way ChatResponse.domain='general' is if route_domain() returned
+    'general', or the outer except in process_query fires (domain still at its
+    value when the exception was thrown).
     """
-    logger.info("Pipeline dispatched | domain=%s", domain)
     pipeline = _PIPELINES.get(domain, general_pipeline)
+    logger.info("Pipeline dispatched | domain=%s", domain)
 
     try:
         return pipeline(query, **kwargs)
     except Exception:
-        logger.exception("Pipeline failed | domain=%s", domain)
+        logger.exception("Pipeline failed | domain=%s — falling back to general pipeline", domain)
         try:
-            logger.info(
-                "Falling back to general pipeline | original_domain=%s",
-                domain,
-            )
             return general_pipeline(query, **kwargs)
         except Exception:
             logger.exception(
@@ -91,3 +94,4 @@ def dispatch_pipeline(domain: str, query: str, **kwargs) -> PipelineOutput:
                 query[:80],
             )
             raise
+

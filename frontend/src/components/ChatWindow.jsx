@@ -66,16 +66,32 @@ export default function ChatWindow({ messages, isLoading, onSelectPrompt }) {
             </div>
           </div>
         ) : (
-          messages.map((msg, index) => (
-            <MessageBubble
-              key={msg.id || index}
-              sender={msg.sender}
-              text={msg.text ?? msg.content}
-              content={msg.content}
-              domain={msg.domain}
-              data={msg.data}
-            />
-          ))
+          messages.map((msg, index) => {
+            // Find the most recent user message before this bot message
+            // so the copy button can format "prompt: ...\nresponse: ..."
+            let prevUserText = null
+            if (msg.sender !== 'user') {
+              for (let i = index - 1; i >= 0; i--) {
+                if (messages[i].sender === 'user') {
+                  prevUserText = messages[i].text ?? messages[i].content ?? null
+                  break
+                }
+              }
+            }
+            return (
+              <MessageBubble
+                key={msg.id || index}
+                sender={msg.sender}
+                text={msg.text ?? msg.content}
+                content={msg.content}
+                domain={msg.domain}
+                data={msg.data}
+                sources={msg.sources ?? null}
+                used_rag={msg.used_rag ?? null}
+                prevUserText={prevUserText}
+              />
+            )
+          })
         )}
       </div>
     </div>

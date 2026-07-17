@@ -11,6 +11,8 @@ export function mapChatResponse(response) {
     domain: payload.domain || 'general',
     data: payload.data || null,
     response: payload.response || '',
+    sources: Array.isArray(payload.sources) ? payload.sources : null,
+    used_rag: payload.used_rag ?? null,
   }
 }
 

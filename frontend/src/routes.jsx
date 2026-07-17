@@ -10,6 +10,8 @@ import SavedCollegesPage from './pages/SavedCollegesPage'
 import CareerPlansPage from './pages/CareerPlansPage'
 import ResumeMatchPage from './pages/ResumeMatchPage'
 import SavedScholarshipsPage from './pages/SavedScholarshipsPage'
+import ProfileEditPage from './pages/ProfileEditPage'
+import KnowledgeVaultPage from './pages/KnowledgeVaultPage'
 
 function RequireAuth({ children }) {
   const { user, initializing } = useContext(AuthContext)
@@ -78,6 +80,22 @@ export default function AppRoutes() {
         element={
           <RequireAuth>
             <SavedScholarshipsPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profile/edit"
+        element={
+          <RequireAuth>
+            <ProfileEditPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/knowledge"
+        element={
+          <RequireAuth>
+            <KnowledgeVaultPage />
           </RequireAuth>
         }
       />

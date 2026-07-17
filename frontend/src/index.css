@@ -774,6 +774,104 @@ html, body {
   color: var(--accent-red);
 }
 
+/* ── Copy button (per bot message) ──────────────────────────────────── */
+
+.msg-copy-row {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* Reveal when the parent message-row is hovered */
+.message-row:hover .msg-copy-row {
+  opacity: 1;
+}
+
+/* Always show when the copy just succeeded so the checkmark is visible */
+.msg-copy-row:has(.msg-copy-btn--done) {
+  opacity: 1;
+}
+
+.msg-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.msg-copy-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}
+
+.msg-copy-btn--done {
+  border-color: rgba(16, 185, 129, 0.4);
+  color: var(--accent-color);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+/* ── RAG toggle row ──────────────────────────────────────────────────── */
+
+.chat-input-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.rag-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.rag-toggle-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.rag-toggle-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rag-toggle-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+}
+
+.rag-toggle-label:has(.rag-toggle-checkbox:checked) .rag-toggle-text {
+  color: var(--accent-color);
+}
+
+/* ── RAG citation strip (below bot message) ──────────────────────────── */
+
+.rag-citation-strip {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: fadeIn 0.2s ease;
+}
+
 /* Auth Pages Styling - Moved to Auth.css */
 
 /* Animations definition */

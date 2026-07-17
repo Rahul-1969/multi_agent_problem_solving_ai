@@ -1,4 +1,4 @@
-import { MessageSquare, Plus, Trash2, GraduationCap, Map, FileText, Award } from "lucide-react";
+import { MessageSquare, Plus, Trash2, GraduationCap, Map, FileText, Award, Database } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import UserProfile from "./UserProfile";
 
@@ -83,6 +83,14 @@ export default function Sidebar({
         >
           <Award size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
           <div className="chat-item-text">Saved Scholarships</div>
+        </div>
+
+        <div
+          className={`chat-item ${location.pathname === "/knowledge" ? "active" : ""}`}
+          onClick={() => navigate("/knowledge")}
+        >
+          <Database size={15} style={{ marginRight: "10px", flexShrink: 0, color: "var(--text-secondary)" }} />
+          <div className="chat-item-text">Knowledge Vault</div>
         </div>
       </div>
 

@@ -483,10 +483,10 @@ def route_domain(query: str) -> str:
     Returns: 'pdf' | 'coding' | 'medical' | 'college' | 'education' | 'general' | 'live' | 'career' | 'scholarship'
     """
     q = query.strip().lower()
-    
+
     # 1. Ask the hybrid classifier
     intent = classify_intent(q)
-    
+
     valid_domains = {
         "live": LIVE_DOMAIN,
         "career": CAREER_DOMAIN,
@@ -496,11 +496,12 @@ def route_domain(query: str) -> str:
         "medical": MEDICAL_DOMAIN,
         "education": EDUCATION_DOMAIN
     }
-    
+
     if intent in valid_domains:
+        selected = valid_domains[intent]
         logger.info("Hybrid classifier selected: %s", intent)
-        return valid_domains[intent]
-        
+        return selected
+
     # 2. If 'local' or unknown, use fine-grained scoring
     scores = {domain: _score(q, domain) for domain in _DOMAIN_KEYWORDS}
 
@@ -518,12 +519,20 @@ def route_domain(query: str) -> str:
         logger.info("Domain selected: %s", GENERAL_DOMAIN)
         return GENERAL_DOMAIN
 
-    # Prefer domains in priority order when scores tie
-    selected = next(
-        domain
-        for domain in _DOMAIN_PRIORITY
-        if scores[domain] == max_score
-    )
+    # Prefer domains in priority order when scores tie.
+    # Guard against a winning domain that is not in _DOMAIN_PRIORITY (would
+    # previously cause a silent StopIteration from the next() generator).
+    candidates = [d for d in _DOMAIN_PRIORITY if scores.get(d, 0) == max_score]
 
+    if not candidates:
+        top_domain = max(scores, key=lambda d: scores[d])
+        logger.warning(
+            "Winning domain %r is not in _DOMAIN_PRIORITY — returning it directly. "
+            "Add it to _DOMAIN_PRIORITY to restore tie-break ordering.",
+            top_domain,
+        )
+        return top_domain
+
+    selected = candidates[0]
     logger.info("Domain selected: %s", selected)
     return selected

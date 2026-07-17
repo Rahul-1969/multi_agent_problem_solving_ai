@@ -44,10 +44,10 @@ def _compile_section_pattern(
 
     # Match section labels at the start of lines, with optional colon.
     # Support both "LABEL:\n<text>" and "LABEL: <text>" formats by
-    # consuming label and optional trailing colon/spaces but not the
-    # following text.
+    # consuming label and optional trailing colon/spaces. By omitting the strict
+    # newline requirement, we allow the content to start on the same line.
     pattern = re.compile(
-        rf'^[ \t]*(?P<label>{alternation})[ \t]*:?[ \t]*(?:\r?\n|$)',
+        rf'^[ \t]*(?P<label>{alternation})[ \t]*:?[ \t]*',
         _LABEL_FLAGS,
     )
     return pattern, alias_to_canonical

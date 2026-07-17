@@ -360,12 +360,18 @@ class ChatMessage(BaseModel):
     domain: str | None = None
     data: dict[str, Any] | None = None
     created_at: str | None = None
+    # RAG metadata — present on bot messages that used the RAG pipeline;
+    # None on user messages and non-RAG bot messages (pre-existing history
+    # entries also safely deserialise as None via the default).
+    sources: list[str] | None = None
+    used_rag: bool | None = None
 
     @model_validator(mode="before")
     def _fill_text(cls, data):
         if isinstance(data, dict) and data.get("text") is None:
             data["text"] = data.get("content")
         return data
+
 
 
 class ChatSummary(BaseModel):
@@ -404,6 +410,8 @@ class ChatResponse(BaseResponse):
     response: str  # formatted string (backward compat)
     messages: list[ChatMessage] | None = None
     chat_title: str | None = None
+    sources: list[str] | None = None
+    used_rag: bool | None = None
 
 
 class ErrorResponse(BaseResponse):

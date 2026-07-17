@@ -28,6 +28,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [useRag, setUseRag] = useState(false)
 
   useEffect(() => {
     void loadChats()
@@ -41,6 +42,15 @@ export default function ChatPage() {
   })
 
   const activeMessages = activeChat?.messages || []
+
+  // Clear the input immediately on send so the textarea empties before
+  // the async bot response arrives — prevents the stale-text-in-box bug.
+  const handleSend = () => {
+    const trimmed = input.trim()
+    if (!trimmed || isLoading) return
+    setInput('')
+    void submitMessage(trimmed, useRag)
+  }
 
   return (
     <div className="app-container">
@@ -81,12 +91,14 @@ export default function ChatPage() {
         <ChatInput
           input={input}
           setInput={setInput}
-          sendMessage={() => submitMessage(input)}
+          sendMessage={handleSend}
           pdfStatus={pdfStatus}
           onClearPdf={() => void clearPdf()}
           onUploadPdf={(file) => void uploadPdf(file)}
           isUploadingPdf={isUploading}
           isLoading={isLoading}
+          useRag={useRag}
+          setUseRag={setUseRag}
         />
       </div>
     </div>

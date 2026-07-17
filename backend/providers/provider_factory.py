@@ -21,7 +21,9 @@ from config.provider_config import (
     PROVIDER_CLASSIFIER,
     PROVIDER_CAREER,
     PROVIDER_SCHOLARSHIP,
-    PROVIDER_COMPARE
+    PROVIDER_COMPARE,
+    PROVIDER_EDUCATION,
+    PROVIDER_RAG
 )
 
 _providers: dict[str, AIProvider] = {}
@@ -59,6 +61,8 @@ def get_provider(task: str) -> AIProvider:
         "career": PROVIDER_CAREER,
         "scholarship": PROVIDER_SCHOLARSHIP,
         "compare": PROVIDER_COMPARE,
+        "education": PROVIDER_EDUCATION,
+        "rag": PROVIDER_RAG,
         "gemini": "gemini-flash"  # alias for backward compatibility
     }
 
@@ -83,7 +87,9 @@ def get_provider_status() -> dict[str, str]:
         "classify": PROVIDER_CLASSIFIER,
         "career": PROVIDER_CAREER,
         "scholarship": PROVIDER_SCHOLARSHIP,
-        "compare": PROVIDER_COMPARE
+        "compare": PROVIDER_COMPARE,
+        "education": PROVIDER_EDUCATION,
+        "rag": PROVIDER_RAG
     }
     all_provider_names = set(task_mapping.values())
     

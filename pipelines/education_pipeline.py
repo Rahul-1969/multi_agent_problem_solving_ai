@@ -21,7 +21,7 @@ from constants import DIVIDER
 from utils.logger import get_logger
 import re
 
-from llm.ollama_client import call_llm
+from backend.providers.provider_factory import get_provider
 from utils.complexity   import detect_complexity
 from utils.section_parser import parse_sections
 from utils.text_cleaner import clean_text
@@ -40,11 +40,8 @@ _SYSTEM = (
     "No markdown.\n"
     "No bold.\n"
     "Plain English.\n"
-    "Always provide ALL of the following sections:\n"
-    "  Definition, Explanation, Working or Principles, Key Features,\n"
-    "  Advantages, Disadvantages, Applications, Example, and Summary.\n"
     "Use bullet points when appropriate.\n"
-    "Write thorough, long answers. Do not skip any section.\n"
+    "Write thorough, long answers. Do not skip any section requested in the prompt.\n"
 )
 
 _SECTION_LABELS :final = {
@@ -133,9 +130,13 @@ def education_pipeline(query: str, **kwargs) -> PipelineResult:
     logger.info("Education pipeline: complexity=%s  tokens=%d", level, token_cap)
 
     try:
-        raw = call_llm(prompt=prompt, system=_SYSTEM, num_predict=token_cap)
-    except RuntimeError as exc:
-        logger.error("Education pipeline error: %s", exc)
+        provider = get_provider("education")
+        result = provider.generate(prompt=prompt, system=_SYSTEM)
+        raw = result.content
+        if not raw:
+            raise RuntimeError("LLM returned an empty response")
+    except Exception as exc:
+        logger.error("Education pipeline error: %s", exc, exc_info=True)
         error_response = f"⚠️  LLM unavailable.\nError: {exc}"
         return PipelineResult(
             response=error_response,

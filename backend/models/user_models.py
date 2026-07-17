@@ -34,6 +34,8 @@ class ProfileData(BaseModel):
     disability: bool | None = None
     income: int | None = None
     state: str | None = None
+    weak_subjects: list[str] | None = None
+    preferred_language: str | None = "English"
 
 class SavedCareerPlan(BaseModel):
     model_config = MODEL_CONFIG

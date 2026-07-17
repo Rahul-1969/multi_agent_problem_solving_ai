@@ -1,0 +1,197 @@
+﻿/* KnowledgeVaultPage.css
+   Extends ProfileEditPage.css visual language — no new tokens introduced.
+   All base form/card/button styles are reused from ProfileEditPage.css directly.
+*/
+
+.knowledge-vault-page {
+  min-height: 100vh;
+  padding: 32px 24px;
+  background-color: var(--bg-main);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+/* ── File input ─────────────────────────────────────────────────────────── */
+
+.knowledge-vault-file-input {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--bg-input);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.knowledge-vault-file-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+.knowledge-vault-file-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Section count badge next to heading ─────────────────────────────── */
+
+.knowledge-vault-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+
+.knowledge-vault-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 40px 24px;
+  color: var(--text-muted);
+  text-align: center;
+  font-size: 14px;
+}
+
+/* ── Document list ───────────────────────────────────────────────────── */
+
+.knowledge-vault-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.knowledge-vault-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s ease;
+}
+
+.knowledge-vault-item:hover {
+  border-color: var(--border-strong);
+}
+
+.knowledge-vault-item-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.knowledge-vault-item-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.knowledge-vault-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.knowledge-vault-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 380px;
+}
+
+.knowledge-vault-item-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────── */
+
+.knowledge-vault-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--accent-color);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.knowledge-vault-badge-dim {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-color);
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Delete button ───────────────────────────────────────────────────── */
+
+.knowledge-vault-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.knowledge-vault-delete-btn:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--accent-red);
+}
+
+.knowledge-vault-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .knowledge-vault-page {
+    padding: 16px;
+  }
+
+  .knowledge-vault-item-name {
+    max-width: 200px;
+  }
+}
